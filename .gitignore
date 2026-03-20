@@ -1,0 +1,14 @@
+# Credentials
+accounts.json
+
+# Rust
+hub20-cli/target/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
