@@ -1,0 +1,16 @@
+[
+  {
+    "label": "Principal",
+    "cpf": "000.000.000-00",
+    "senha": "sua_senha",
+    "condominio": 2078,
+    "unidade": "0 000"
+  },
+  {
+    "label": "Consulta",
+    "cpf": "111.111.111-11",
+    "senha": "outra_senha",
+    "condominio": 2078,
+    "unidade": "0 000"
+  }
+]
