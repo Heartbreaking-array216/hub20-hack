@@ -23,7 +23,7 @@
 
 ---
 
-## 🎯 Overview
+## 🎯 Visão Geral
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1e293b', 'primaryTextColor': '#e2e8f0', 'primaryBorderColor': '#2563eb', 'lineColor': '#059669', 'secondaryColor': '#0f172a', 'tertiaryColor': '#334155'}}}%%
@@ -37,8 +37,8 @@ flowchart LR
     subgraph Core["⚡ Motor"]
         direction TB
         AUTH["🔐 Auth<br/>Base + Bearer"]
-        SNIPER["🎯 Sniper<br/>Midnight Fire"]
-        SPY["🕵️ Espião<br/>Speed Tracker"]
+        SNIPER["🎯 Sniper<br/>Disparo Meia-Noite"]
+        SPY["🕵️ Espião<br/>Rastreio de Velocidade"]
     end
 
     subgraph API["🏢 Hub 2.0 API"]
@@ -57,18 +57,18 @@ flowchart LR
 | **Contas** | N contas simultâneas (reserva + consulta) |
 | **Sniper** | Disparo automático à meia-noite com refresh de token |
 | **Espião** | Identifica quem reserva nos primeiros 30s (⚡ SPEED) |
-| **Interfaces** | Python CLI · Rust 2.3MB binary · HTML + proxy |
+| **Interfaces** | Python CLI · Rust 2.3MB binário · HTML + proxy |
 
 ---
 
-## ⚡ Quick Start
+## ⚡ Início Rápido
 
 ```bash
 git clone git@github.com:gabrielmaialva33/hub20.git && cd hub20
 cp accounts.example.json accounts.json   # edite com suas credenciais
 ```
 
-Escolha sua interface:
+Escolha sua arma:
 
 ```bash
 # 🐍 Python — menu interativo
@@ -89,8 +89,8 @@ python3 server.py    # abre http://localhost:8080
 | Ferramenta | Versão | Pra quê |
 |:-----------|:-------|:--------|
 | Python | `>= 3.10` | CLI + proxy server |
-| Rust | `>= 1.75` | Binary (opcional) |
-| requests | qualquer | Dep do Python CLI |
+| Rust | `>= 1.75` | Binário (opcional) |
+| requests | qualquer | Dependência do Python CLI |
 
 </details>
 
@@ -274,14 +274,14 @@ graph TB
 | Camada | Arquivo | Função |
 |:-------|:--------|:-------|
 | **Python CLI** | `auto_booking.py` | Menu interativo + flags CLI, N contas, sniper, espião |
-| **Rust Binary** | `hub20-cli/` | Mesmo feature set, binário nativo 2.3MB |
-| **Web Dashboard** | `index.html` | Interface visual com countdown, requer proxy |
+| **Binário Rust** | `hub20-cli/` | Mesmo conjunto de funcionalidades, binário nativo 2.3MB |
+| **Dashboard Web** | `index.html` | Interface visual com countdown, requer proxy |
 | **CORS Proxy** | `server.py` | Proxy local pra browser (API não tem CORS headers) |
 | **Config** | `accounts.json` | Credenciais das N contas (gitignored) |
 
 ---
 
-## 🦀 Rust Binary
+## 🦀 Binário Rust
 
 Binário único de 2.3MB — sem Python, sem Node, sem dependências.
 
@@ -313,22 +313,22 @@ python3 server.py    # inicia proxy em :8080
 # abre http://localhost:8080
 ```
 
-| Feature | Descrição |
+| Recurso | Descrição |
 |:--------|:----------|
 | **Login** | 2 contas com seletor |
 | **Espaços** | Lista com botão "Selecionar" → preenche sniper |
 | **Horários** | Vagas em tempo real com botão "🎯 Sniper" |
-| **Sniper** | Countdown visual 5em tamanho grande, disparo automático |
+| **Sniper** | Countdown visual em tamanho grande, disparo automático |
 | **Minhas** | Reservas ativas com botão cancelar |
 | **Espião** | Tabela com badges ⚡ SPEED e 🏎️ RÁPIDO |
 
 ---
 
-## 📡 API Reference
+## 📡 Referência da API
 
-| Método | Endpoint | Função |
-|:-------|:---------|:-------|
-| `POST` | `/api/v1/login` | Auth → retorna JWT |
+| Método | Endpoint | Descrição |
+|:-------|:---------|:----------|
+| `POST` | `/api/v1/login` | Autenticação → retorna JWT |
 | `GET` | `/api/v1/areas?codigoCondominio=N` | Listar áreas |
 | `GET` | `/api/v1/areas/{id}/datasDisponiveis` | Horários + vagas |
 | `POST` | `/api/v1/reservas` | Criar reserva |
@@ -336,7 +336,7 @@ python3 server.py    # inicia proxy em :8080
 | `GET` | `/api/v1/reservas` | Todas as reservas (IDOR) |
 
 <details>
-<summary><strong>Body da reserva</strong></summary>
+<summary><strong>Corpo da requisição de reserva</strong></summary>
 
 ```json
 {
@@ -363,18 +363,18 @@ python3 server.py    # inicia proxy em :8080
 
 ## 📊 Status
 
-| Feature | Python | Rust | Web |
+| Recurso | Python | Rust | Web |
 |:--------|:------:|:----:|:---:|
 | Multi-conta (N) | ✅ | ✅ | ✅ (2) |
 | Listar áreas | ✅ | ✅ | ✅ |
 | Ver horários | ✅ | ✅ | ✅ |
 | Reservar | ✅ | ✅ | via Sniper |
-| Sniper midnight | ✅ | ✅ | ✅ |
+| Sniper meia-noite | ✅ | ✅ | ✅ |
 | Cancelar | ✅ | ✅ | ✅ |
 | Espião + badges | ✅ | ✅ | ✅ |
-| Token auto-refresh | ✅ | ✅ | ✅ |
+| Renovação de token | ✅ | ✅ | ✅ |
 | Config persistente | ✅ | ✅ | — |
-| Cross-platform | ✅ | ✅ | ✅ |
+| Multiplataforma | ✅ | ✅ | ✅ |
 
 ---
 
@@ -384,7 +384,7 @@ python3 server.py    # inicia proxy em :8080
 
 [![GitHub stars](https://img.shields.io/github/stars/gabrielmaialva33/hub20?style=social)](https://github.com/gabrielmaialva33/hub20)
 
-*Built by [Gabriel Maia](https://github.com/gabrielmaialva33)*
+*Feito por [Gabriel Maia](https://github.com/gabrielmaialva33)*
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:059669,50:2563eb,100:0f172a&height=100&section=footer" width="100%"/>
 
