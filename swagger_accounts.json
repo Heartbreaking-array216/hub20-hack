@@ -1,0 +1,2501 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "version": "v1",
+        "title": "Hubert.Accounts API",
+        "description": "API specification, services features.",
+        "contact": {
+            "name": "US",
+            "email": "contato@hubert.com.br"
+        }
+    },
+    "paths": {
+        "/api/v1/captcha": {
+            "post": {
+                "tags": [
+                    "Captcha"
+                ],
+                "summary": "Verifica o token do reCAPTCHA.",
+                "operationId": "VerificaCaptcha",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/VerificarCaptchaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Retorna true se o captcha for v\u00e1lido.",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "uniqueItems": false,
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    }
+                }
+            }
+        },
+        "/api/preautorizacao/v1": {
+            "post": {
+                "tags": [
+                    "Convite"
+                ],
+                "operationId": "Convite",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "convite",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/ConviteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/v1/preautorizacao": {
+            "post": {
+                "tags": [
+                    "Convite"
+                ],
+                "operationId": "Convite",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "convite",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/ConviteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/preautorizacao/v1/validatoken": {
+            "get": {
+                "tags": [
+                    "Convite"
+                ],
+                "operationId": "ValidaConviteGuid",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "chaveValidacao",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/v1/preautorizacao/validatoken": {
+            "get": {
+                "tags": [
+                    "Convite"
+                ],
+                "operationId": "ValidaConviteGuid",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "chaveValidacao",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/preautorizacao/v1/efetivacadastro": {
+            "post": {
+                "tags": [
+                    "Convite"
+                ],
+                "operationId": "EfetivaConvite",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "cadastro",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/EfetivaConviteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/v1/preautorizacao/efetivacadastro": {
+            "post": {
+                "tags": [
+                    "Convite"
+                ],
+                "operationId": "EfetivaConvite",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "cadastro",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/EfetivaConviteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/v1/preautorizacao/proprietario": {
+            "get": {
+                "tags": [
+                    "Convite"
+                ],
+                "operationId": "EnviaConviteProprietario",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "Condominio",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/preautorizacao/cadastroproprietario": {
+            "post": {
+                "tags": [
+                    "Convite"
+                ],
+                "operationId": "EfetivaConvite",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/EfetivaConviteProprietarioRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/v1/healthcheck": {
+            "get": {
+                "tags": [
+                    "HealthCheck"
+                ],
+                "summary": "Retorna objeto com informa\u00e7\u00f5es do ambiente",
+                "operationId": "getHealthStatus",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "Type",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "enum": [
+                            1
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/HealthCheckResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ocorreu erro durante o procesamento"
+                    }
+                }
+            }
+        },
+        "/api/v1/termosLgpd": {
+            "get": {
+                "tags": [
+                    "Lgpd"
+                ],
+                "summary": "Lista os termos cadastrados",
+                "operationId": "GetTermos",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "uniqueItems": false,
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/TermosLgpdModelRepository"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/termosLgpd/{CodTermo}": {
+            "get": {
+                "tags": [
+                    "Lgpd"
+                ],
+                "summary": "Retorna o Termo",
+                "operationId": "GetTermo",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "CodTermo",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "Nome",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "CpfCnpj",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "Rg",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "Email",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/TermosLgpdModelRepository"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/termosLgpd/{CodTermo}/assinatura": {
+            "post": {
+                "tags": [
+                    "Lgpd"
+                ],
+                "summary": "Aceite do usu\u00e1rio para um termo, para qualquer sistema, exceto portal",
+                "operationId": "AssinarTermo",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "CodTermo",
+                        "in": "path",
+                        "description": "Id do termo para aceite",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/termosLgpd/{CodTermo}/assinaturaPortal/{CodUsuarioPortal}": {
+            "post": {
+                "tags": [
+                    "Lgpd"
+                ],
+                "summary": "Aceite do usu\u00e1rio para um termo, apenas para o portal (SistemaWeb)",
+                "operationId": "AssinarTermoPortal",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "CodTermo",
+                        "in": "path",
+                        "description": "",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "CodUsuarioPortal",
+                        "in": "path",
+                        "description": "",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/termosLgpd/{CodTermo}/assinaturaApp": {
+            "post": {
+                "tags": [
+                    "Lgpd"
+                ],
+                "summary": "Aceite do usu\u00e1rio para um termo, para qualquer sistema, exceto portal",
+                "operationId": "AssinarTermoSemToken",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "CodTermo",
+                        "in": "path",
+                        "description": "Id do termo para aceite",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/AssinarTermoSemTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/v1/termosLgpd/termosAssinados": {
+            "get": {
+                "tags": [
+                    "Lgpd"
+                ],
+                "summary": "Retorna assinatura de termos de um usu\u00e1rio, exceto portal. Acesso com conta de usu\u00e1rio.",
+                "operationId": "GetAssinatura",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/termosLgpd/termosAssinadosPortal/{CodUsuarioPortal}": {
+            "get": {
+                "tags": [
+                    "Lgpd"
+                ],
+                "summary": "Retorna assinatura de termos de um usu\u00e1rio do Portal. Acesso com conta de sistema.",
+                "operationId": "GetAssinaturaPortal",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "CodUsuarioPortal",
+                        "in": "path",
+                        "description": "",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/termosLgpd/termosAssinadosApp": {
+            "get": {
+                "tags": [
+                    "Lgpd"
+                ],
+                "summary": "Retorna assinatura de termos de um usu\u00e1rio do app que ainda n\u00e3o possui login cadastrado",
+                "operationId": "GetAssinaturaApp",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/RetornaAssinaturasSemTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/login/v1": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "Login",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/v1/login": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "Login",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/login/v1/validaracesso": {
+            "get": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "VerificaValidadeToken",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/login/validaracesso": {
+            "get": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "VerificaValidadeToken",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/login/v1/alterarsenha": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "AlterarSenha",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "alterarSenha",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/AlterarSenhaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/login/alterarsenha": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "AlterarSenha",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "alterarSenha",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/AlterarSenhaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/login/v1/esquecisenha": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "EsqueceuSenha",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/EsqueceuSenhaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/v1/login/esquecisenha": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "EsqueceuSenha",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/EsqueceuSenhaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/login/v1/validaesquecisenhatoken": {
+            "get": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "ValidaEsqueceuSenhaGuid",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "chaveValidacao",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/v1/login/validaesquecisenhatoken": {
+            "get": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "ValidaEsqueceuSenhaGuid",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "chaveValidacao",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/login/v1/efetivaesquecisenha": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "EfetivaEsqueceuSenha",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/EfetivaEsqueceuSenhaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/v1/login/efetivaesquecisenha": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "EfetivaEsqueceuSenha",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/EfetivaEsqueceuSenhaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/login/v1/dispcadastrologin": {
+            "get": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "DisponinibilidadeCadastroLogin",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "Email",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "SistemaUrl",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "Sistema",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/v1/login/dispcadastrologin": {
+            "get": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "DisponinibilidadeCadastroLogin",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "Email",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "SistemaUrl",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "Sistema",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/login/v1/verificaMFA": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "VerificaMFA",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/v1/login/verificaMFA": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "VerificaMFA",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/login/v1/configuraMFA": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "ConfiguraMFA",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/login/configuraMFA": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "ConfiguraMFA",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/login/v1/finalizaMFA": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "FinalizaMFA",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/FinalizaMFARequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/login/finalizaMFA": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "FinalizaMFA",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/FinalizaMFARequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/login/v1/validaMFA": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "ValidaMFA",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/ValidaMFARequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/login/validaMFA": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "ValidaMFA",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/ValidaMFARequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/login/v1/configuratelefoneMFA": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "ConfiguraTelefoneMFA",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/ConfiguraTelefoneMFARequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/login/configuratelefoneMFA": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "ConfiguraTelefoneMFA",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/ConfiguraTelefoneMFARequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/login/v1/finalizatelefoneMFA": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "FinalizaTelefoneMFA",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/FinalizaTelefoneMFARequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/login/finalizatelefoneMFA": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "FinalizaTelefoneMFA",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/FinalizaTelefoneMFARequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/login/AcessosUsuario": {
+            "get": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "RetornaAcessosUsuario",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "Condominio",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "uniqueItems": false,
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/AcessosUsuarioBase"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/login/funcionario/{codigoFuncionario}/criarLogin": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "CriarLoginFuncionario",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "codigoFuncionario",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/login/funcionario/{codigoFuncionario}/resetarLogin": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "operationId": "ResetarLoginFuncionario",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "codigoFuncionario",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/pessoas/{cpfCnpj}/emails": {
+            "get": {
+                "tags": [
+                    "Pessoa"
+                ],
+                "operationId": "RetornaEmailsPorCpf",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "cpfCnpj",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "rg",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/RetornaEmailsPorCPFResponse"
+                        }
+                    },
+                    "204": {
+                        "description": "CPF/CNPJ n\u00e3o encontrado"
+                    }
+                }
+            }
+        },
+        "/api/v1/pessoas/{codigoPessoa}/emails/{codigoEmail}/enviarToken": {
+            "post": {
+                "tags": [
+                    "Pessoa"
+                ],
+                "operationId": "EnviarTokenEmail",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "codigoPessoa",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "codigoEmail",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "format": "int32",
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pessoas/{codigoPessoa}/emails/{codigoEmail}/efetivarToken": {
+            "post": {
+                "tags": [
+                    "Pessoa"
+                ],
+                "operationId": "EfetivarTokenEmail",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "codigoPessoa",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "codigoEmail",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/EfetivarTokenEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pessoas/{codigoPessoa}/emails/{codigoEmail}/cadastrarSenha": {
+            "post": {
+                "tags": [
+                    "Pessoa"
+                ],
+                "operationId": "CadastrarSenhaApp",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "codigoPessoa",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "codigoEmail",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/CadastrarSenhaAppRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pessoas/{cpfCnpj}/cadastroBasico": {
+            "post": {
+                "tags": [
+                    "Pessoa"
+                ],
+                "operationId": "CadastroBasico",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "cpfCnpj",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/CriarCadastroBasicoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/CriarCadastroBasicoResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pessoas/{codigoPessoa}/cadastroBasico": {
+            "put": {
+                "tags": [
+                    "Pessoa"
+                ],
+                "operationId": "AlterarCadastroBasico",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "codigoPessoa",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "request",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/AlterarCadastroBasicoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/template/v1/gettemplate": {
+            "get": {
+                "tags": [
+                    "Template"
+                ],
+                "operationId": "GetTemplate",
+                "consumes": [],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "Codigo",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/api/template/v1/inserirtemplate": {
+            "post": {
+                "tags": [
+                    "Template"
+                ],
+                "operationId": "InserirTemplate",
+                "consumes": [
+                    "application/json-patch+json",
+                    "application/json",
+                    "text/json",
+                    "application/*+json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "requestInsert",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/TemplateInsertRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ]
+            }
+        }
+    },
+    "definitions": {
+        "VerificarCaptchaRequest": {
+            "required": [
+                "token"
+            ],
+            "type": "object",
+            "properties": {
+                "token": {
+                    "description": "Token gerado pelo captcha do google no front",
+                    "type": "string"
+                }
+            }
+        },
+        "ConviteRequest": {
+            "type": "object",
+            "properties": {
+                "cpfCnpj": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "sistemaUrl": {
+                    "type": "string"
+                },
+                "sistema": {
+                    "format": "int32",
+                    "type": "integer"
+                }
+            }
+        },
+        "EfetivaConviteRequest": {
+            "type": "object",
+            "properties": {
+                "nomePessoa": {
+                    "type": "string"
+                },
+                "senha": {
+                    "type": "string"
+                },
+                "chaveValidacao": {
+                    "format": "uuid",
+                    "type": "string"
+                },
+                "sistema": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "sistemaUrl": {
+                    "type": "string"
+                }
+            }
+        },
+        "EfetivaConviteProprietarioRequest": {
+            "type": "object",
+            "properties": {
+                "senha": {
+                    "type": "string"
+                },
+                "chaveValidacao": {
+                    "type": "string"
+                }
+            }
+        },
+        "HealthCheckResponse": {
+            "type": "object",
+            "properties": {
+                "dataAppService": {
+                    "format": "date-time",
+                    "type": "string"
+                },
+                "getDateSQL": {
+                    "format": "date-time",
+                    "type": "string"
+                },
+                "app": {
+                    "type": "string"
+                },
+                "instance": {
+                    "type": "string"
+                },
+                "config": {
+                    "type": "string"
+                }
+            }
+        },
+        "TermosLgpdModelRepository": {
+            "type": "object",
+            "properties": {
+                "codTermo": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "titulo": {
+                    "type": "string"
+                },
+                "descricao": {
+                    "type": "string"
+                },
+                "termoLgpd": {
+                    "type": "string"
+                }
+            }
+        },
+        "AssinarTermoSemTokenRequest": {
+            "type": "object",
+            "properties": {
+                "cpfCnpj": {
+                    "type": "string"
+                },
+                "rg": {
+                    "type": "string"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "codigoEmail": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "codTermo": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "ipAcesso": {
+                    "type": "string"
+                },
+                "browser": {
+                    "type": "string"
+                },
+                "dataAssinatura": {
+                    "format": "date-time",
+                    "type": "string"
+                }
+            }
+        },
+        "RetornaAssinaturasSemTokenRequest": {
+            "type": "object",
+            "properties": {
+                "cpfCnpj": {
+                    "type": "string"
+                },
+                "rg": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "AlterarSenhaRequest": {
+            "type": "object",
+            "properties": {
+                "atual": {
+                    "type": "string"
+                },
+                "nova": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "sistemaUrl": {
+                    "type": "string"
+                },
+                "sistema": {
+                    "format": "int32",
+                    "type": "integer"
+                }
+            }
+        },
+        "EsqueceuSenhaRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "sistemaUrl": {
+                    "type": "string"
+                },
+                "sistema": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "param": {
+                    "type": "string"
+                }
+            }
+        },
+        "EfetivaEsqueceuSenhaRequest": {
+            "type": "object",
+            "properties": {
+                "senha": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "chaveValidacao": {
+                    "type": "string"
+                },
+                "sistemaUrl": {
+                    "type": "string"
+                },
+                "sistema": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "param": {
+                    "type": "string"
+                }
+            }
+        },
+        "FinalizaMFARequest": {
+            "type": "object",
+            "properties": {
+                "codigoMFA": {
+                    "format": "int32",
+                    "type": "integer"
+                }
+            }
+        },
+        "ValidaMFARequest": {
+            "type": "object",
+            "properties": {
+                "codigoMFA": {
+                    "format": "int32",
+                    "type": "integer"
+                }
+            }
+        },
+        "ConfiguraTelefoneMFARequest": {
+            "type": "object",
+            "properties": {
+                "ddd": {
+                    "type": "string"
+                },
+                "numeroTelefone": {
+                    "type": "string"
+                }
+            }
+        },
+        "FinalizaTelefoneMFARequest": {
+            "type": "object",
+            "properties": {
+                "tokenSMS": {
+                    "type": "string"
+                }
+            }
+        },
+        "AcessosUsuarioBase": {
+            "type": "object",
+            "properties": {
+                "condominio": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "codigoPessoa": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "nomePessoa": {
+                    "type": "string"
+                },
+                "codigoPai": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "codigo": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "icon": {
+                    "type": "string"
+                },
+                "rota": {
+                    "type": "string"
+                },
+                "tipo": {
+                    "type": "string"
+                },
+                "regraAPI": {
+                    "type": "string",
+                    "readOnly": true
+                },
+                "posicao": {
+                    "type": "string"
+                },
+                "ordemLista": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "recursiva": {
+                    "type": "string"
+                },
+                "nivelAcesso": {
+                    "$ref": "#/definitions/AcessosUsuarioAppNivel"
+                },
+                "alterarPadrao": {
+                    "type": "boolean"
+                },
+                "atributos": {
+                    "$ref": "#/definitions/AcessosUsuarioAtributosMenuERP"
+                },
+                "funcionalidades": {
+                    "uniqueItems": false,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AcessosUsuarioBase"
+                    }
+                }
+            }
+        },
+        "AcessosUsuarioAppNivel": {
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "tipo": {
+                    "type": "string"
+                }
+            }
+        },
+        "AcessosUsuarioAtributosMenuERP": {
+            "type": "object",
+            "properties": {
+                "default": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "RetornaEmailsPorCPFResponse": {
+            "type": "object",
+            "properties": {
+                "nome": {
+                    "type": "string"
+                },
+                "codigoPessoa": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "usuarioHubert": {
+                    "type": "boolean"
+                },
+                "cadastradoViaApp": {
+                    "type": "boolean"
+                },
+                "tipoAcessoCondomonioApp": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "descricaoTipoAcessoCondomonioApp": {
+                    "type": "string"
+                },
+                "emails": {
+                    "uniqueItems": false,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EmailsPorCPFResponse"
+                    }
+                }
+            }
+        },
+        "EmailsPorCPFResponse": {
+            "type": "object",
+            "properties": {
+                "emailSujo": {
+                    "type": "string"
+                },
+                "possuiSenha": {
+                    "type": "boolean"
+                },
+                "validado": {
+                    "type": "boolean"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "codigoEmail": {
+                    "format": "int32",
+                    "type": "integer"
+                }
+            }
+        },
+        "EfetivarTokenEmailRequest": {
+            "type": "object",
+            "properties": {
+                "codigoPessoa": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "codigoEmail": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "CadastrarSenhaAppRequest": {
+            "type": "object",
+            "properties": {
+                "codigoPessoa": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "codigoEmail": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "senha": {
+                    "type": "string"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "CriarCadastroBasicoRequest": {
+            "type": "object",
+            "properties": {
+                "cpfCnpj": {
+                    "type": "string"
+                },
+                "rg": {
+                    "type": "string"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "telefoneDdd": {
+                    "type": "string"
+                },
+                "telefoneDdi": {
+                    "type": "string"
+                },
+                "telefoneNumero": {
+                    "type": "string"
+                }
+            }
+        },
+        "CriarCadastroBasicoResponse": {
+            "type": "object",
+            "properties": {
+                "codigoPessoa": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "codigoEmail": {
+                    "format": "int32",
+                    "type": "integer"
+                }
+            }
+        },
+        "AlterarCadastroBasicoRequest": {
+            "type": "object",
+            "properties": {
+                "codigoPessoa": {
+                    "format": "int32",
+                    "type": "integer"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "telefoneDdd": {
+                    "type": "string"
+                },
+                "telefoneDdi": {
+                    "type": "string"
+                },
+                "telefoneNumero": {
+                    "type": "string"
+                }
+            }
+        },
+        "TemplateInsertRequest": {
+            "type": "object",
+            "properties": {
+                "nomeTemplate": {
+                    "type": "string"
+                },
+                "versao": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "Bearer": {
+            "name": "Authorization",
+            "in": "header",
+            "type": "apiKey",
+            "description": "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer 12345abcdef\""
+        }
+    }
+}
