@@ -64,6 +64,7 @@
     <button class="tab" onclick="showTab(this,'sniper')">🎯 Sniper</button>
     <button class="tab" onclick="showTab(this,'minhas')">📌 Minhas</button>
     <button class="tab" onclick="showTab(this,'espiao')">🕵️ Espião</button>
+    <button class="tab" onclick="showTab(this,'troca')">🔄 Troca</button>
   </div>
 
   <!-- LOGIN - Suporte a 2 contas -->
@@ -171,6 +172,28 @@
     </div>
     <p class="help">💡 Mostra quem reservou e QUANDO (com milissegundos). Identifique quem tá usando automação!</p>
     <div id="espiao-list"></div>
+  </div>
+  <!-- TROCA -->
+  <div id="tab-troca" class="panel">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Cancelar com</label>
+        <select id="t-src"><option value="1">Conta 1</option><option value="2">Conta 2</option></select>
+      </div>
+      <div><label>&nbsp;</label><button class="btn" onclick="loadTrocaReservas()">Carregar Reservas</button></div>
+    </div>
+    <div id="troca-reservas"></div>
+    <div id="troca-form" style="display:none;margin-top:16px;">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Reservar com</label>
+          <select id="t-dst"><option value="1">Conta 1</option><option value="2">Conta 2</option></select>
+        </div>
+        <div><label>&nbsp;</label><button class="btn btn-sniper" onclick="executeTroca()">🔄 Executar Troca</button></div>
+      </div>
+    </div>
+    <p class="help">💡 Cancela com uma conta e reserva com outra em milissegundos. Token renovado antes da troca.</p>
+    <div id="troca-log" class="log" style="margin-top:12px"></div>
   </div>
 </div>
 
@@ -541,6 +564,127 @@ async function loadEspiao() {
   }
 
   document.getElementById('espiao-list').innerHTML = html;
+}
+
+// ===== TROCA =====
+let trocaReservas = [];
+let trocaSelected = null;
+
+async function loadTrocaReservas() {
+  const acct = parseInt(document.getElementById('t-src').value);
+  if (!accounts[acct]?.token) { alert('Login primeiro na conta ' + acct); return; }
+  const a = accounts[acct];
+  const r = await apiFetch('GET', API_MORADOR + '/api/v1/reservas', null, acct);
+  if (r.status !== 200) { document.getElementById('troca-reservas').innerHTML = '<p>Erro</p>'; return; }
+
+  trocaReservas = r.data.filter(x => x.condominio?.codigo === a.condo && x.unidade === a.unid && x.situacao?.codigo === 2);
+  if (!trocaReservas.length) {
+    document.getElementById('troca-reservas').innerHTML = '<p>Nenhuma reserva ativa.</p>';
+    document.getElementById('troca-form').style.display = 'none';
+    return;
+  }
+
+  let html = '<table><tr><th></th><th>Código</th><th>Espaço</th><th>Data</th><th>Horário</th></tr>';
+  trocaReservas.forEach((r, i) => {
+    const area = (r.area?.descricao || '').trim();
+    const dt = r.dataInicial?.substring(0, 10) || '';
+    const ini = r.dataInicial?.substring(11, 16) || '';
+    const fim = r.dataFinal?.substring(11, 16) || '';
+    html += '<tr onclick="selectTroca(' + i + ')" id="tr-row-' + i + '" style="cursor:pointer">';
+    html += '<td><input type="radio" name="troca-sel" ' + (i === 0 ? 'checked' : '') + '></td>';
+    html += '<td>' + r.codigoReserva + '</td><td>' + area + '</td><td>' + dt + '</td><td>' + ini + '-' + fim + '</td></tr>';
+  });
+  html += '</table>';
+  document.getElementById('troca-reservas').innerHTML = html;
+  document.getElementById('troca-form').style.display = 'block';
+  trocaSelected = 0;
+}
+
+function selectTroca(idx) {
+  trocaSelected = idx;
+  document.querySelectorAll('[name="troca-sel"]').forEach((r, i) => r.checked = i === idx);
+}
+
+async function executeTroca() {
+  if (trocaSelected === null || !trocaReservas[trocaSelected]) { alert('Selecione uma reserva'); return; }
+  const srcAcct = parseInt(document.getElementById('t-src').value);
+  const dstAcct = parseInt(document.getElementById('t-dst').value);
+  if (!accounts[srcAcct]?.token || !accounts[dstAcct]?.token) { alert('Ambas contas precisam estar logadas'); return; }
+
+  const reserva = trocaReservas[trocaSelected];
+  const cod = reserva.codigoReserva;
+  const areaCod = reserva.area?.codigo || reserva.area?.codigoArea;
+  const areaName = (reserva.area?.descricao || '').trim();
+  // Limpar datas: sem ms, sem Z
+  const inicio = (reserva.dataInicial || '').split('.')[0].replace('Z', '');
+  const fim = (reserva.dataFinal || '').split('.')[0].replace('Z', '');
+
+  const log = document.getElementById('troca-log');
+  log.innerHTML = '';
+  const tLog = (msg, type) => { log.innerHTML += '<div class="log-' + type + '">' + msg + '</div>'; log.scrollTop = log.scrollHeight; };
+
+  tLog('🔄 Troca: cancelar #' + cod + ' (' + areaName + ') → reservar com conta ' + dstAcct, 'info');
+
+  // Refresh tokens
+  tLog('🔄 Renovando tokens...', 'info');
+  const srcCreds = btoa(document.getElementById('cpf' + srcAcct).value + ':' + document.getElementById('senha' + srcAcct).value);
+  const dstCreds = btoa(document.getElementById('cpf' + dstAcct).value + ':' + document.getElementById('senha' + dstAcct).value);
+
+  let lr = await fetch(API_ACCOUNTS + '/api/v1/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Base ' + srcCreds, 'Origin': 'app-morador' } });
+  let ld = await lr.json();
+  if (lr.status === 200) accounts[srcAcct].token = ld.token;
+
+  if (srcAcct !== dstAcct) {
+    lr = await fetch(API_ACCOUNTS + '/api/v1/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Base ' + dstCreds, 'Origin': 'app-morador' } });
+    ld = await lr.json();
+    if (lr.status === 200) accounts[dstAcct].token = ld.token;
+  }
+  tLog('✅ Tokens renovados', 'ok');
+
+  // CANCEL
+  const t0 = performance.now();
+  const rc = await apiFetch('POST', API_MORADOR + '/api/v1/reservas/' + cod + '/cancelar', { motivo: 'Troca de conta' }, srcAcct);
+  const tCancel = performance.now();
+
+  if (rc.status !== 200) {
+    const msg = Array.isArray(rc.data) ? rc.data[0] : JSON.stringify(rc.data);
+    tLog('❌ Cancel falhou: ' + msg, 'err');
+    return;
+  }
+  tLog('❌ Cancelado #' + cod + ' (' + Math.round(tCancel - t0) + 'ms)', 'ok');
+
+  // RESERVE — rajada de tentativas
+  const a = accounts[dstAcct];
+  for (let i = 1; i <= 5; i++) {
+    const ts = new Date().toLocaleTimeString('pt-BR', { hour12: false, fractionalSecondDigits: 3 });
+    const rr = await apiFetch('POST', API_MORADOR + '/api/v1/reservas', {
+      codigoArea: areaCod, codigoCondominio: a.condo, unidade: a.unid,
+      quantPessoas: 1, dataReserva: [{ dataInicial: inicio, dataFinal: fim }], observacoes: ''
+    }, dstAcct);
+
+    if (rr.status === 200) {
+      const tEnd = performance.now();
+      const novoCod = rr.data?.codigoReserva || '?';
+      tLog('[' + ts + '] ✅ RESERVA CRIADA! Código: ' + novoCod + ' (' + Math.round(tEnd - t0) + 'ms total)', 'ok');
+      setStatus('🔄 Troca completa! #' + cod + ' → #' + novoCod);
+      loadTrocaReservas(); // refresh list
+      return;
+    }
+
+    const msg = Array.isArray(rr.data) ? rr.data[0] : JSON.stringify(rr.data);
+    tLog('[' + ts + '] Tentativa ' + i + ': ' + msg, 'warn');
+
+    if (msg.includes('não está disponível')) {
+      tLog('💀 Alguém pegou o slot entre cancel e reserve!', 'err');
+      return;
+    }
+    if (msg.includes('quantidade de reservas')) {
+      tLog('❌ Conta destino já tem reserva ativa nesse tipo de área!', 'err');
+      return;
+    }
+    if (i >= 3) await new Promise(r => setTimeout(r, 50));
+  }
+  tLog('💀 Falhou. Reserva #' + cod + ' foi cancelada mas nova não criou!', 'err');
 }
 
 // Defaults

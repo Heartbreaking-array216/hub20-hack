@@ -388,6 +388,187 @@ def sniper(
     print(f"  {R}{BOLD}💀 Falhou apos 10 tentativas.{RST}")
 
 
+def trocar_reserva(clients: list[HubClient]) -> None:
+    """Cancela com conta A, reserva com conta B — em milissegundos."""
+    print(f"\n  {M}{BOLD}🔄 TROCA DE RESERVA{RST}")
+    print(f"  {DIM}Cancela com uma conta, reserva com outra — atomico{RST}\n")
+
+    if len(clients) < 2:
+        print(f"  {Y}⚠️  Com 1 conta so, o slot fica vulneravel entre cancel e reserve.{RST}")
+        print(f"  {DIM}Ideal: 2+ contas pra blindar.{RST}\n")
+
+    src = pick_client(clients, "Conta que vai CANCELAR")
+    if not src:
+        return
+
+    reservas = src.minhas_reservas()
+    if not reservas:
+        print(f"  {R}Nenhuma reserva ativa nessa conta.{RST}")
+        return
+
+    print(
+        f"\n  {BOLD}{'#':>3}  {'Cod':>8}  {'Espaco':<35}  {'Data':>12}  {'Horario'}{RST}"
+    )
+    print(f"  {'-' * 75}")
+    for i, r in enumerate(reservas, 1):
+        a_name = r["area"]["descricao"].strip()
+        d = r["dataInicial"][:10]
+        print(
+            f"  {i:>3}  {r['codigoReserva']:>8}  {a_name:<35}  {d:>12}  "
+            f"{r['dataInicial'][11:16]}-{r['dataFinal'][11:16]}"
+        )
+
+    n = input(f"\n  Numero da reserva pra cancelar: ").strip()
+    try:
+        reserva = reservas[int(n) - 1]
+    except (ValueError, IndexError):
+        print(f"  {R}Numero invalido.{RST}")
+        return
+
+    dst = pick_client(clients, "Conta que vai RESERVAR")
+    if not dst:
+        return
+
+    area_cod = reserva["area"]["codigo"]
+    area_nome = reserva["area"]["descricao"].strip()
+    # Limpa datas: remove ms e Z, garante formato local
+    inicio = reserva["dataInicial"].split(".")[0].replace("Z", "")
+    fim = reserva["dataFinal"].split(".")[0].replace("Z", "")
+    cod_reserva = reserva["codigoReserva"]
+
+    print(f"\n  {BOLD}Plano de execucao:{RST}")
+    print(f"  {R}1. CANCELAR{RST} #{cod_reserva} ({area_nome}) com {src.account.label}")
+    print(
+        f"  {G}2. RESERVAR{RST} {area_nome} {inicio[11:16]}-{fim[11:16]} "
+        f"com {dst.account.label}"
+    )
+    print(f"\n  {Y}⚠️  Se a reserva falhar apos o cancelamento, o slot fica livre!{RST}")
+
+    confirm = input(f"\n  Confirma? (s/n) [s]: ").strip().lower() or "s"
+    if confirm != "s":
+        print(f"  {DIM}Abortado.{RST}")
+        return
+
+    # Refresh tokens antes de tudo pra maximizar janela
+    print(f"\n  {B}🔄 Renovando tokens...{RST}")
+    src.login()
+    if dst is not src:
+        dst.login()
+
+    # EXECUTE — cancel + reserve back-to-back
+    t0 = time.monotonic()
+
+    print(f"  {R}❌ Cancelando #{cod_reserva}...{RST}", end=" ", flush=True)
+    r_cancel = src.cancelar(cod_reserva)
+    if r_cancel["status"] != 200:
+        msg = r_cancel["body"]
+        if isinstance(msg, list):
+            msg = msg[0]
+        print(f"\n  {R}Falha no cancelamento: {msg}{RST}")
+        return
+    t_cancel = time.monotonic()
+    print(f"{G}OK ({(t_cancel - t0) * 1000:.0f}ms){RST}")
+
+    # Rajada de tentativas de reserva — sem sleep entre as primeiras
+    for attempt in range(1, 6):
+        ts = datetime.now().strftime("%H:%M:%S.%f")[:12]
+        r_reserva = dst.reservar(area_cod, inicio, fim)
+
+        if r_reserva["status"] == 200:
+            t_end = time.monotonic()
+            novo_cod = r_reserva["body"].get("codigoReserva")
+            print(f"  {G}{BOLD}✅ RESERVA CRIADA [{ts}]! Codigo: {novo_cod}{RST}")
+            print(f"  {G}🔄 Troca completa em {(t_end - t0) * 1000:.0f}ms{RST}")
+            return
+
+        msg = r_reserva["body"]
+        if isinstance(msg, list):
+            msg = msg[0]
+        print(f"  {Y}⏳ Tentativa {attempt} [{ts}]: {msg}{RST}")
+
+        # Se "nao disponivel" alguem pegou no meio
+        if "não está disponível" in str(msg).lower():
+            print(f"  {R}{BOLD}💀 Alguem pegou o slot entre o cancel e o reserve!{RST}")
+            return
+
+        # Quantidade de reservas ativa = conta destino ja tem reserva nessa area
+        if "quantidade de reservas" in str(msg).lower():
+            print(
+                f"  {R}{BOLD}❌ Conta destino ja tem reserva ativa nesse tipo de area!{RST}"
+            )
+            print(f"  {DIM}Cancele a reserva da conta destino primeiro.{RST}")
+            return
+
+        # Pequeno delay so a partir da tentativa 3
+        if attempt >= 3:
+            time.sleep(0.05)
+
+    print(f"  {R}{BOLD}💀 Falhou apos 5 tentativas.{RST}")
+    print(
+        f"  {R}⚠️  A reserva #{cod_reserva} FOI CANCELADA "
+        f"mas a nova NAO foi criada!{RST}"
+    )
+
+
+def trocar_cli(clients: list[HubClient], cod_reserva: int, conta_src: int, conta_dst: int) -> None:
+    """Troca via CLI: --trocar CODIGO --conta N --conta-destino N."""
+    src_idx = min(conta_src - 1, len(clients) - 1)
+    dst_idx = min(conta_dst - 1, len(clients) - 1)
+    src = clients[src_idx]
+    dst = clients[dst_idx]
+
+    # Buscar dados da reserva
+    reservas = src.minhas_reservas()
+    reserva = next((r for r in reservas if r["codigoReserva"] == cod_reserva), None)
+    if not reserva:
+        print(f"  {R}Reserva #{cod_reserva} nao encontrada na conta {src.account.label}.{RST}")
+        return
+
+    area_cod = reserva["area"]["codigo"]
+    area_nome = reserva["area"]["descricao"].strip()
+    inicio = reserva["dataInicial"].split(".")[0].replace("Z", "")
+    fim = reserva["dataFinal"].split(".")[0].replace("Z", "")
+
+    print(f"  {R}CANCELAR{RST} #{cod_reserva} ({area_nome}) → {src.account.label}")
+    print(f"  {G}RESERVAR{RST} {inicio[11:16]}-{fim[11:16]} → {dst.account.label}")
+
+    # Refresh tokens
+    src.login()
+    if dst is not src:
+        dst.login()
+
+    t0 = time.monotonic()
+    r_cancel = src.cancelar(cod_reserva)
+    if r_cancel["status"] != 200:
+        msg = r_cancel["body"]
+        if isinstance(msg, list):
+            msg = msg[0]
+        print(f"  {R}❌ Cancel falhou: {msg}{RST}")
+        return
+    print(f"  {G}✅ Cancelado ({(time.monotonic() - t0) * 1000:.0f}ms){RST}")
+
+    for attempt in range(1, 6):
+        ts = datetime.now().strftime("%H:%M:%S.%f")[:12]
+        r_reserva = dst.reservar(area_cod, inicio, fim)
+        if r_reserva["status"] == 200:
+            novo_cod = r_reserva["body"].get("codigoReserva")
+            print(f"  {G}✅ Reservado #{novo_cod} [{ts}] ({(time.monotonic() - t0) * 1000:.0f}ms total){RST}")
+            return
+        msg = r_reserva["body"]
+        if isinstance(msg, list):
+            msg = msg[0]
+        if "não está disponível" in str(msg).lower():
+            print(f"  {R}💀 Slot pego por outro! [{ts}]{RST}")
+            return
+        if "quantidade de reservas" in str(msg).lower():
+            print(f"  {R}❌ Conta destino ja tem reserva ativa nesse tipo!{RST}")
+            return
+        if attempt >= 3:
+            time.sleep(0.05)
+
+    print(f"  {R}💀 Falhou. Reserva #{cod_reserva} foi cancelada mas nova nao criou!{RST}")
+
+
 # ===== GERENCIAR CONTAS =====
 
 
@@ -449,6 +630,7 @@ def menu(clients: list[HubClient], accounts: list[Account]) -> None:
         print(f"  {C}│{RST} 6. Minhas reservas               {C}│{RST}")
         print(f"  {C}│{RST} 7. Cancelar reserva              {C}│{RST}")
         print(f"  {C}│{RST} 8. Espiao (quem reservou)        {C}│{RST}")
+        print(f"  {C}│{RST} 9. Trocar reserva (cancel+book)  {C}│{RST}")
         print(f"  {C}│{RST} 0. Sair                          {C}│{RST}")
         print(f"  {C}└──────────────────────────────────┘{RST}")
         for c in clients:
@@ -563,6 +745,9 @@ def menu(clients: list[HubClient], accounts: list[Account]) -> None:
                 data = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
             espiao(c, data)
 
+        elif op == "9":
+            trocar_reserva(clients)
+
         elif op == "0":
             break
 
@@ -583,6 +768,14 @@ def main() -> None:
     parser.add_argument("--minhas", action="store_true")
     parser.add_argument("--cancelar", type=int)
     parser.add_argument("--espiao", type=str, metavar="YYYY-MM-DD")
+    parser.add_argument(
+        "--trocar", type=int, metavar="COD_RESERVA",
+        help="Trocar reserva: cancela com --conta, reserva com --conta-destino"
+    )
+    parser.add_argument(
+        "--conta-destino", type=int, default=2,
+        help="Conta destino pra troca (default: 2)"
+    )
     parser.add_argument(
         "--conta", type=int, default=1, help="Numero da conta (default: 1)"
     )
@@ -629,7 +822,9 @@ def main() -> None:
         idx = min(args.conta - 1, len(clients) - 1)
         client = clients[idx]
 
-        if args.listar:
+        if args.trocar:
+            trocar_cli(clients, args.trocar, args.conta, args.conta_destino)
+        elif args.listar:
             mostrar_areas(client)
         elif args.espiao:
             espiao(client, args.espiao)

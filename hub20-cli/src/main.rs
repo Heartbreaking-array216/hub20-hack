@@ -70,6 +70,14 @@ enum Cmd {
         /// Data (YYYY-MM-DD)
         data: String,
     },
+    /// Trocar reserva - cancela com uma conta, reserva com outra
+    Trocar {
+        /// Codigo da reserva pra cancelar
+        codigo: i64,
+        /// Conta destino (numero)
+        #[arg(long, default_value = "2")]
+        destino: usize,
+    },
 }
 
 // ===== CONFIG =====
@@ -653,6 +661,100 @@ fn do_sniper(client: &HubClient, account: &mut Account, area: i64, data: &str, h
     println!("  {}", "💀 Falhou apos 10 tentativas.".red().bold());
 }
 
+fn do_trocar(client: &HubClient, accounts: &mut Vec<Account>, src_idx: usize, dst_idx: usize, cod_reserva: i64) {
+    println!("\n  {}", "🔄 TROCA DE RESERVA".purple().bold());
+
+    // Find reservation in source account
+    let reservas = client.minhas_reservas(&accounts[src_idx]);
+    let reserva = reservas.iter().find(|r| r["codigoReserva"].as_i64() == Some(cod_reserva));
+    let reserva = match reserva {
+        Some(r) => r.clone(),
+        None => {
+            println!("  {} Reserva #{} nao encontrada na conta {}.",
+                "❌".red(), cod_reserva, accounts[src_idx].config.label);
+            return;
+        }
+    };
+
+    let area_cod = reserva["area"]["codigo"].as_i64().unwrap_or(0);
+    let area_nome = reserva["area"]["descricao"].as_str().unwrap_or("?").trim();
+    // Clean dates: strip ms and Z
+    let inicio_raw = reserva["dataInicial"].as_str().unwrap_or("?");
+    let fim_raw = reserva["dataFinal"].as_str().unwrap_or("?");
+    let inicio = inicio_raw.split('.').next().unwrap_or(inicio_raw).replace("Z", "");
+    let fim = fim_raw.split('.').next().unwrap_or(fim_raw).replace("Z", "");
+    let h_ini = if inicio.len() >= 16 { &inicio[11..16] } else { "?" };
+    let h_fim = if fim.len() >= 16 { &fim[11..16] } else { "?" };
+
+    println!("  {} #{} ({}) com {}", "CANCELAR".red(), cod_reserva, area_nome, accounts[src_idx].config.label);
+    println!("  {} {} {}-{} com {}", "RESERVAR".green(), area_nome, h_ini, h_fim, accounts[dst_idx].config.label);
+    println!("\n  {}", "⚠️  Se a reserva falhar apos cancelar, o slot fica livre!".yellow());
+
+    // Refresh tokens
+    println!("\n  {} Renovando tokens...", "🔄".blue());
+    client.login(&mut accounts[src_idx]);
+    if src_idx != dst_idx {
+        client.login(&mut accounts[dst_idx]);
+    }
+
+    // EXECUTE
+    let t0 = std::time::Instant::now();
+
+    print!("  {} Cancelando #{}... ", "❌".red(), cod_reserva);
+    use std::io::Write;
+    std::io::stdout().flush().ok();
+
+    let (status, body) = client.cancelar(&accounts[src_idx], cod_reserva);
+    if status != 200 {
+        let msg = if body.is_array() {
+            body[0].as_str().unwrap_or("?").to_string()
+        } else {
+            body.to_string()
+        };
+        println!("\n  {} Cancel falhou: {}", "❌".red(), msg);
+        return;
+    }
+    let t_cancel = t0.elapsed();
+    println!("{} ({}ms)", "OK".green(), t_cancel.as_millis());
+
+    // Reserve burst
+    for attempt in 1..=5 {
+        let ts = Local::now().format("%H:%M:%S%.3f").to_string();
+        let (status, body) = client.reservar(&accounts[dst_idx], area_cod, &inicio, &fim);
+
+        if status == 200 {
+            let novo_cod = body["codigoReserva"].as_i64().unwrap_or(0);
+            let elapsed = t0.elapsed();
+            println!(
+                "  {} [{}]! Codigo: {} ({}ms total)",
+                "✅ RESERVA CRIADA".green().bold(), ts, novo_cod, elapsed.as_millis()
+            );
+            return;
+        }
+
+        let msg = if body.is_array() {
+            body[0].as_str().unwrap_or("?").to_string()
+        } else {
+            body.to_string()
+        };
+        println!("  {} Tentativa {} [{}]: {}", "⏳".yellow(), attempt, ts, msg);
+
+        if msg.to_lowercase().contains("não está disponível") {
+            println!("  {}", "💀 Alguem pegou o slot entre cancel e reserve!".red().bold());
+            return;
+        }
+        if msg.to_lowercase().contains("quantidade de reservas") {
+            println!("  {}", "❌ Conta destino ja tem reserva ativa nesse tipo!".red().bold());
+            return;
+        }
+        if attempt >= 3 {
+            thread::sleep(Duration::from_millis(50));
+        }
+    }
+
+    println!("  {}", "💀 Falhou. Reserva cancelada mas nova nao criou!".red().bold());
+}
+
 // ===== INTERACTIVE MENU =====
 
 fn interactive_menu(client: &HubClient, accounts: &mut Vec<Account>, configs: &mut Vec<AccountConfig>) {
@@ -666,6 +768,7 @@ fn interactive_menu(client: &HubClient, accounts: &mut Vec<Account>, configs: &m
         println!("  {} 6. Minhas reservas               {}", "│".cyan(), "│".cyan());
         println!("  {} 7. Cancelar reserva              {}", "│".cyan(), "│".cyan());
         println!("  {} 8. Espiao (quem reservou)        {}", "│".cyan(), "│".cyan());
+        println!("  {} 9. Trocar reserva (cancel+book)  {}", "│".cyan(), "│".cyan());
         println!("  {} 0. Sair                          {}", "│".cyan(), "│".cyan());
         println!("  {}", "└──────────────────────────────────┘".cyan());
 
@@ -852,6 +955,41 @@ fn interactive_menu(client: &HubClient, accounts: &mut Vec<Account>, configs: &m
                         .interact_text()
                         .unwrap_or_default();
                     show_espiao(client, &accounts[idx], data.trim());
+                }
+            }
+            "9" => {
+                if accounts.len() < 2 {
+                    println!("  {} Troca precisa de 2+ contas.", "⚠️".yellow());
+                }
+                if let Some(src_idx) = pick_account(accounts) {
+                    let reservas = client.minhas_reservas(&accounts[src_idx]);
+                    if reservas.is_empty() {
+                        println!("  {} Nenhuma reserva ativa.", "❌".red());
+                        continue;
+                    }
+                    println!("\n  {:>3}  {:>8}  {:<35}  {:>12}  {}", "#".bold(), "Cod".bold(), "Espaco".bold(), "Data".bold(), "Horario".bold());
+                    println!("  {}", "-".repeat(75));
+                    for (i, r) in reservas.iter().enumerate() {
+                        let cod = r["codigoReserva"].as_i64().unwrap_or(0);
+                        let area = r["area"]["descricao"].as_str().unwrap_or("?").trim();
+                        let di = r["dataInicial"].as_str().unwrap_or("?");
+                        let df = r["dataFinal"].as_str().unwrap_or("?");
+                        let h_ini = if di.len() >= 16 { &di[11..16] } else { "?" };
+                        let h_fim = if df.len() >= 16 { &df[11..16] } else { "?" };
+                        println!("  {:>3}  {:>8}  {:<35}  {:>12}  {}-{}", i + 1, cod, area, &di[..10.min(di.len())], h_ini, h_fim);
+                    }
+                    let n: String = Input::new()
+                        .with_prompt("\n  Numero da reserva")
+                        .interact_text()
+                        .unwrap_or_default();
+                    let r_idx: usize = n.trim().parse::<usize>().unwrap_or(1) - 1;
+                    if r_idx >= reservas.len() { continue; }
+                    let cod = reservas[r_idx]["codigoReserva"].as_i64().unwrap_or(0);
+
+                    println!("  {} Conta que vai RESERVAR:", "💡".dimmed());
+                    if let Some(dst_idx) = pick_account(accounts) {
+                        do_trocar(client, accounts, src_idx, dst_idx, cod);
+                    }
                 }
             }
             "0" => break,
@@ -1096,6 +1234,10 @@ fn main() {
             }
             Cmd::Espiao { data } => {
                 show_espiao(&client, &accounts[idx], &data);
+            }
+            Cmd::Trocar { codigo, destino } => {
+                let dst_idx = (destino - 1).min(accounts.len() - 1);
+                do_trocar(&client, &mut accounts, idx, dst_idx, codigo);
             }
         }
         return;
