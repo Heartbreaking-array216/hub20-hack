@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """
 Hub 2.0 - Auto Booking ⚡
-Multi-conta, sniper, espiao — tudo via API direta.
+Multi-conta, sniper, espiao, radar, ranking — tudo via API direta.
 Mais rapido que o app — reserva em milissegundos.
 
 Uso interativo:  python3 auto_booking.py
 Modo sniper:     python3 auto_booking.py --sniper --area 17 --data 2026-04-03 --hora 20:00
+Modo radar:      python3 auto_booking.py --radar --area 17 --data 2026-03-27 --hora 20:00
+Ranking bots:    python3 auto_booking.py --ranking --dias 14
 Ver horarios:    python3 auto_booking.py --area 17 --data 2026-03-27
 Listar espacos:  python3 auto_booking.py --listar
 Minhas reservas: python3 auto_booking.py --minhas
 Cancelar:        python3 auto_booking.py --cancelar 1332211
 Espiao:          python3 auto_booking.py --espiao 2026-03-20
+Trocar reserva:  python3 auto_booking.py --trocar 1332211
 Usar conta N:    python3 auto_booking.py --conta 2 --minhas
 """
 
@@ -406,6 +409,205 @@ def sniper(
     print(f"  {R}{BOLD}💀 Falhou apos 10 tentativas.{RST}")
 
 
+def radar(
+    client: HubClient,
+    consult: HubClient,
+    area: int,
+    data: str,
+    hora: str | None = None,
+    intervalo: int = 5,
+) -> None:
+    """Monitora area por cancelamentos e auto-reserva quando abrir."""
+    print(f"\n  {M}{BOLD}📡 MODO RADAR — Monitorando cancelamentos{RST}")
+    print(f"  {C}📍 Area {area} | 📅 {data}{RST}")
+    if hora:
+        print(f"  {C}🎯 Alvo: {hora}{RST}")
+    print(f"  {C}👤 Reserva: {client.account.label} | Consulta: {consult.account.label}{RST}")
+    print(f"  {DIM}🔄 Poll a cada {intervalo}s | Ctrl+C pra parar{RST}\n")
+
+    ciclo = 0
+    ultimo_estado: dict[str, int] = {}
+
+    try:
+        while True:
+            ciclo += 1
+            ts = datetime.now().strftime("%H:%M:%S")
+
+            # Refresh token a cada 50 ciclos (~4min)
+            if ciclo % 50 == 0:
+                consult.login()
+                if client is not consult:
+                    client.login()
+
+            slots = consult.ver_horarios(area, data)
+            if not slots:
+                print(
+                    f"\r  {DIM}[{ts}] #{ciclo} — sem slots disponiveis (area bloqueada?){RST}  ",
+                    end="",
+                    flush=True,
+                )
+                time.sleep(intervalo)
+                continue
+
+            estado_atual = {s["inicio"][11:16]: s for s in slots}
+
+            # Detectar slots que abriram (vagas > 0 e antes era 0 ou não existia)
+            novos = []
+            for h, s in estado_atual.items():
+                if s["vagas"] > 0:
+                    vagas_antes = ultimo_estado.get(h, 0)
+                    if vagas_antes == 0 and ciclo > 1:
+                        novos.append(s)
+
+            # Filtrar por hora-alvo se especificada
+            if hora and novos:
+                target = hora.zfill(5)
+                novos = [s for s in novos if s["inicio"][11:16] == target]
+
+            # Se não tem novos mas é primeiro ciclo, checar se já tem vaga
+            if ciclo == 1 and not novos:
+                if hora:
+                    target = hora.zfill(5)
+                    for h, s in estado_atual.items():
+                        if h == target and s["vagas"] > 0:
+                            novos.append(s)
+                # Se não tem hora-alvo no primeiro ciclo, não auto-reserva
+                # (senão pega qualquer slot que já tava disponível)
+
+            if novos:
+                for s in novos:
+                    h_display = s["inicio"][11:16]
+                    print(f"\n\n  {G}{BOLD}📡 SLOT ABRIU! {h_display} disponivel!{RST}")
+                    print(
+                        f"  {G}🚀 Auto-reservando com {client.account.label}...{RST}"
+                    )
+
+                    # Refresh token antes de reservar
+                    client.login()
+
+                    for attempt in range(1, 6):
+                        ts_try = datetime.now().strftime("%H:%M:%S.%f")[:12]
+                        r = client.reservar(area, s["inicio"], s["fim"])
+                        if r["status"] == 200:
+                            cod = r["body"].get("codigoReserva")
+                            print(
+                                f"  {G}{BOLD}✅ RESERVA #{cod} [{ts_try}]!{RST}"
+                            )
+                            print(f"  {G}📅 {data} {h_display}{RST}")
+                            return
+                        msg = r["body"]
+                        if isinstance(msg, list):
+                            msg = msg[0]
+                        print(f"  {Y}Tentativa {attempt} [{ts_try}]: {msg}{RST}")
+                        if "não está disponível" in str(msg).lower():
+                            print(f"  {R}💀 Alguem pegou antes!{RST}")
+                            break
+                        if "quantidade de reservas" in str(msg).lower():
+                            print(
+                                f"  {R}❌ Conta ja tem reserva nesse tipo de area!{RST}"
+                            )
+                            return
+
+                    print(f"  {Y}Continuando monitoramento...{RST}\n")
+
+            # Status compacto
+            total_vagas = sum(1 for s in estado_atual.values() if s["vagas"] > 0)
+            total_slots = len(estado_atual)
+            print(
+                f"\r  {DIM}[{ts}] #{ciclo} — {total_vagas}/{total_slots} slots livres{RST}  ",
+                end="",
+                flush=True,
+            )
+
+            ultimo_estado = {h: s["vagas"] for h, s in estado_atual.items()}
+            time.sleep(intervalo)
+
+    except KeyboardInterrupt:
+        print(f"\n\n  {Y}📡 Radar desligado. {ciclo} ciclos.{RST}")
+
+
+def ranking(client: HubClient, dias: int = 7) -> None:
+    """Analisa quem usa automação no condomínio — ranking de boteiros."""
+    print(f"\n  {M}{BOLD}🏆 RANKING DE BOTEIROS — ultimos {dias} dias{RST}\n")
+
+    reservas = client.todas_reservas_condo()
+    hoje = datetime.now()
+
+    # Coletar reservas SPEED (solicitadas nos primeiros 30s da meia-noite)
+    speeds: dict[str, list] = {}  # "NOME | UNID" -> [reserva, ...]
+    rapidos: dict[str, list] = {}
+
+    for r in reservas:
+        sol = r.get("dataSolicitacao", "")
+        if len(sol) < 19:
+            continue
+
+        # Filtrar por range de dias
+        try:
+            dt_sol = datetime.strptime(sol[:19], "%Y-%m-%dT%H:%M:%S")
+            if (hoje - dt_sol).days > dias:
+                continue
+        except ValueError:
+            continue
+
+        h, m, s = int(sol[11:13]), int(sol[14:16]), int(sol[17:19])
+        nome = r.get("nome", "?")[:30]
+        unid = r.get("unidade", "?")
+        key = f"{nome} | {unid}"
+
+        if h == 0 and m == 0 and s <= 30:
+            speeds.setdefault(key, []).append(r)
+        elif h == 0 and m <= 1:
+            rapidos.setdefault(key, []).append(r)
+
+    if not speeds and not rapidos:
+        print(f"  {DIM}Nenhuma reserva suspeita encontrada.{RST}")
+        return
+
+    # Ranking por SPEED (< 30s)
+    if speeds:
+        ranked = sorted(speeds.items(), key=lambda x: -len(x[1]))
+        print(f"  {R}{BOLD}⚡ SPEED (<30s da meia-noite) — 100% automacao{RST}\n")
+        print(f"  {'#':>3}  {'Vezes':>5}  {'Nome / Unidade':<45}  {'Ultimo'}")
+        print(f"  {'-' * 80}")
+        for i, (key, lista) in enumerate(ranked[:20], 1):
+            ultimo = max(r.get("dataSolicitacao", "")[:10] for r in lista)
+            medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i:>2}"
+            print(f"  {medal:>3}  {len(lista):>5}x  {key:<45}  {ultimo}")
+        total_speed = sum(len(v) for v in speeds.values())
+        print(f"\n  {DIM}{len(speeds)} moradores, {total_speed} reservas SPEED{RST}")
+
+    # Ranking por RAPIDO (< 2min)
+    if rapidos:
+        ranked_r = sorted(rapidos.items(), key=lambda x: -len(x[1]))
+        print(f"\n  {Y}{BOLD}🏎️  RAPIDO (<2min) — provavelmente automacao{RST}\n")
+        print(f"  {'#':>3}  {'Vezes':>5}  {'Nome / Unidade':<45}  {'Ultimo'}")
+        print(f"  {'-' * 80}")
+        for i, (key, lista) in enumerate(ranked_r[:15], 1):
+            ultimo = max(r.get("dataSolicitacao", "")[:10] for r in lista)
+            print(f"  {i:>3}  {len(lista):>5}x  {key:<45}  {ultimo}")
+
+    # Horários mais disputados
+    print(f"\n  {C}{BOLD}🔥 Horarios mais disputados (SPEED){RST}\n")
+    hora_count: dict[str, int] = {}
+    area_count: dict[str, int] = {}
+    for lista in speeds.values():
+        for r in lista:
+            h = r.get("dataInicial", "")[11:16]
+            a = r.get("area", {}).get("descricao", "?").strip()
+            hora_count[h] = hora_count.get(h, 0) + 1
+            area_count[a] = area_count.get(a, 0) + 1
+
+    for h, cnt in sorted(hora_count.items(), key=lambda x: -x[1])[:10]:
+        bar = "█" * min(cnt, 30)
+        print(f"  {h}  {bar} {cnt}")
+
+    print(f"\n  {C}{BOLD}🏟️  Areas mais disputadas{RST}\n")
+    for a, cnt in sorted(area_count.items(), key=lambda x: -x[1])[:10]:
+        bar = "█" * min(cnt, 30)
+        print(f"  {a:<30}  {bar} {cnt}")
+
+
 def trocar_reserva(clients: list[HubClient]) -> None:
     """Cancela com conta A, reserva com conta B — em milissegundos."""
     print(f"\n  {M}{BOLD}🔄 TROCA DE RESERVA{RST}")
@@ -651,8 +853,10 @@ def menu(clients: list[HubClient], accounts: list[Account]) -> None:
         print(f"  {C}│{RST} 7. Cancelar reserva              {C}│{RST}")
         print(f"  {C}│{RST} 8. Espiao (quem reservou)        {C}│{RST}")
         print(f"  {C}│{RST} 9. Trocar reserva (cancel+book)  {C}│{RST}")
-        print(f"  {C}│{RST} 0. Sair                          {C}│{RST}")
-        print(f"  {C}└──────────────────────────────────┘{RST}")
+        print(f"  {C}│{RST} 10. Radar (monitora cancelamento) {C}│{RST}")
+        print(f"  {C}│{RST} 11. Ranking (quem usa bot)        {C}│{RST}")
+        print(f"  {C}│{RST} 0. Sair                           {C}│{RST}")
+        print(f"  {C}└───────────────────────────────────┘{RST}")
         for c in clients:
             if c.logged_in:
                 print(f"  {DIM}👤 {c.account.label}: {c.account.nome}{RST}")
@@ -768,6 +972,30 @@ def menu(clients: list[HubClient], accounts: list[Account]) -> None:
         elif op == "9":
             trocar_reserva(clients)
 
+        elif op == "10":
+            print(f"\n  {M}{BOLD}📡 RADAR — Monitora cancelamentos e auto-reserva{RST}")
+            print(f"  {DIM}Use uma conta pra consultar e outra pra reservar{RST}\n")
+            reserva_c = pick_client(clients, "Conta pra RESERVAR")
+            if not reserva_c:
+                continue
+            consulta_c = reserva_c
+            if len(clients) > 1:
+                consulta_c = pick_client(clients, "Conta pra CONSULTAR horarios") or reserva_c
+            cod = input("  Codigo da area: ").strip()
+            data = input("  Data (YYYY-MM-DD) [+7 dias]: ").strip()
+            if not data:
+                data = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
+            hora_r = input("  Horario alvo (HH:MM) [vazio = qualquer]: ").strip() or None
+            interv = input("  Intervalo em segundos [5]: ").strip() or "5"
+            radar(reserva_c, consulta_c, int(cod), data, hora_r, int(interv))
+
+        elif op == "11":
+            c = pick_client(clients, "Conta")
+            if not c:
+                continue
+            d = input("  Analisar ultimos N dias [7]: ").strip() or "7"
+            ranking(c, int(d))
+
         elif op == "0":
             break
 
@@ -792,6 +1020,14 @@ def main() -> None:
         "--trocar", type=int, metavar="COD_RESERVA",
         help="Trocar reserva: cancela com --conta, reserva com --conta-destino"
     )
+    parser.add_argument("--radar", action="store_true", help="Modo radar: monitora cancelamentos")
+    parser.add_argument(
+        "--intervalo", type=int, default=5, help="Intervalo do radar em segundos (default: 5)"
+    )
+    parser.add_argument(
+        "--ranking", action="store_true", help="Ranking de boteiros do condominio"
+    )
+    parser.add_argument("--dias", type=int, default=7, help="Dias pra analisar no ranking (default: 7)")
     parser.add_argument(
         "--conta-destino", type=int, default=2,
         help="Conta destino pra troca (default: 2)"
@@ -840,13 +1076,20 @@ def main() -> None:
     # CLI mode — verifica se alguma acao foi pedida
     has_action = any([
         args.listar, args.espiao, args.sniper, args.minhas,
-        args.cancelar, args.trocar, args.area,
+        args.cancelar, args.trocar, args.radar, args.ranking, args.area,
     ])
     if has_action:
         idx = max(0, min(args.conta - 1, len(clients) - 1))
         client = clients[idx]
 
-        if args.trocar:
+        if args.ranking:
+            ranking(client, args.dias)
+        elif args.radar and args.area and args.data:
+            # Radar: --conta pra reservar, conta seguinte pra consultar
+            consult_idx = (idx + 1) % len(clients) if len(clients) > 1 else idx
+            consult = clients[consult_idx]
+            radar(client, consult, args.area, args.data, args.hora, args.intervalo)
+        elif args.trocar:
             trocar_cli(clients, args.trocar, args.conta, args.conta_destino)
         elif args.listar:
             mostrar_areas(client)

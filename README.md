@@ -42,6 +42,8 @@ flowchart LR
         SNIPER["🎯 Sniper<br/>Disparo Meia-Noite"]
         SPY["🕵️ Espião<br/>Rastreio de Velocidade"]
         SWAP["🔄 Troca<br/>Cancel + Rebook"]
+        RADAR["📡 Radar<br/>Vigília + Auto-Book"]
+        RANK["🏆 Ranking<br/>Análise de Bots"]
     end
 
     subgraph API["🏢 Hub 2.0 API"]
@@ -60,6 +62,8 @@ flowchart LR
 | **Contas** | N contas simultâneas (reserva + consulta) |
 | **Sniper** | Disparo automático à meia-noite com refresh de token |
 | **Espião** | Identifica quem reserva nos primeiros 30s (⚡ SPEED) |
+| **Radar** | Monitora cancelamentos e auto-reserva em tempo real |
+| **Ranking** | Análise de boteiros: top users, horários e áreas mais disputadas |
 | **Troca** | Cancel conta A → reserva conta B (atômico, <200ms) |
 | **Interfaces** | Python CLI · Rust 2.3MB · Node.js (zero deps) · HTML + proxy |
 
@@ -243,7 +247,31 @@ python3 auto_booking.py --minhas
 python3 auto_booking.py --cancelar 1332456
 ```
 
-### 9. Trocar reserva (cancel + rebook atômico)
+### 9. Radar — Monitora cancelamentos e auto-reserva
+
+Fica vigiando uma área e reserva **automaticamente** quando alguém cancelar:
+
+```bash
+# Vigiar Quadra de Areia dia 27, qualquer horário
+python3 auto_booking.py --radar --area 17 --data 2026-03-27
+
+# Vigiar horário específico (20:00)
+python3 auto_booking.py --radar --area 17 --data 2026-03-27 --hora 20:00
+
+# Intervalo customizado (2s = mais agressivo)
+python3 auto_booking.py --radar --area 17 --data 2026-03-27 --hora 20:00 --intervalo 2
+```
+
+### 10. Ranking — Quem usa bot no condomínio
+
+```bash
+python3 auto_booking.py --ranking               # últimos 7 dias
+python3 auto_booking.py --ranking --dias 30      # último mês
+```
+
+Mostra top boteiros com medalhas, horários mais disputados, áreas mais concorridas.
+
+### 11. Trocar reserva (cancel + rebook atômico)
 
 Cancela com uma conta e reserva instantaneamente com outra — janela de <200ms:
 
@@ -304,7 +332,7 @@ graph TB
 
 | Camada | Arquivo | Função |
 |:-------|:--------|:-------|
-| **Python CLI** | `auto_booking.py` | Menu interativo + flags CLI, N contas, sniper, espião, troca |
+| **Python CLI** | `auto_booking.py` | Menu interativo + flags CLI, N contas, sniper, espião, troca, radar, ranking |
 | **Binário Rust** | `hub20-cli/` | Mesmo conjunto de funcionalidades, binário nativo 2.3MB |
 | **Node.js CLI** | `hub20.mjs` | Zero deps (fetch nativo), menu + flags, all features |
 | **Dashboard Web** | `index.html` | Interface visual com countdown, requer proxy |
@@ -420,6 +448,8 @@ python3 server.py    # inicia proxy em :8080
 | Cancelar | ✅ | ✅ | ✅ | ✅ |
 | Espião + badges | ✅ | ✅ | ✅ | ✅ |
 | Troca (cancel+rebook) | ✅ | ✅ | ✅ | ✅ |
+| Radar (auto-book) | ✅ | — | — | — |
+| Ranking (bot analysis) | ✅ | — | — | — |
 | Renovação de token | ✅ | ✅ | ✅ | ✅ |
 | Config persistente | ✅ | ✅ | ✅ | — |
 | Multiplataforma | ✅ | ✅ | ✅ | ✅ |
