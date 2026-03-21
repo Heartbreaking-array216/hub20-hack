@@ -68,14 +68,13 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
         req = urllib.request.Request(target_url, data=body, method=method)
 
         # Forward relevant headers
-        for header in ["Authorization", "Content-Type", "Origin"]:
+        for header in ["Authorization", "Content-Type"]:
             val = self.headers.get(header)
             if val:
                 req.add_header(header, val)
 
-        # If no Origin from client, set app-morador
-        if not self.headers.get("Origin"):
-            req.add_header("Origin", "app-morador")
+        # Always set Origin to app-morador (browser overrides Origin header)
+        req.add_header("Origin", "app-morador")
 
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
