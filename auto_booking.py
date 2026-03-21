@@ -69,8 +69,11 @@ class Account:
 
 def load_accounts() -> list[Account]:
     if CONFIG_PATH.exists():
-        data = json.loads(CONFIG_PATH.read_text())
-        return [Account(**d) for d in data]
+        try:
+            data = json.loads(CONFIG_PATH.read_text())
+            return [Account(**d) for d in data]
+        except (json.JSONDecodeError, TypeError, KeyError) as e:
+            print(f"  {R}Erro ao ler {CONFIG_PATH}: {e}{RST}")
     return []
 
 
@@ -158,25 +161,34 @@ class HubClient:
         return slots
 
     def reservar(self, area: int, inicio: str, fim: str) -> dict:
-        r = self.session.post(
-            f"{API_MORADOR}/api/v1/reservas",
-            json={
-                "codigoArea": area,
-                "codigoCondominio": self.account.condominio,
-                "unidade": self.account.unidade,
-                "quantPessoas": 1,
-                "dataReserva": [{"dataInicial": inicio, "dataFinal": fim}],
-                "observacoes": "",
-            },
-        )
-        return {"status": r.status_code, "body": r.json()}
+        # Sanitiza datas: remove ms e Z pra garantir formato local
+        inicio = inicio.split(".")[0].replace("Z", "")
+        fim = fim.split(".")[0].replace("Z", "")
+        try:
+            r = self.session.post(
+                f"{API_MORADOR}/api/v1/reservas",
+                json={
+                    "codigoArea": area,
+                    "codigoCondominio": self.account.condominio,
+                    "unidade": self.account.unidade,
+                    "quantPessoas": 1,
+                    "dataReserva": [{"dataInicial": inicio, "dataFinal": fim}],
+                    "observacoes": "",
+                },
+            )
+            return {"status": r.status_code, "body": r.json()}
+        except Exception as e:
+            return {"status": 0, "body": f"Erro: {e}"}
 
     def cancelar(self, codigo: int) -> dict:
-        r = self.session.post(
-            f"{API_MORADOR}/api/v1/reservas/{codigo}/cancelar",
-            json={"motivo": "Aplicativo morador"},
-        )
-        return {"status": r.status_code, "body": r.json()}
+        try:
+            r = self.session.post(
+                f"{API_MORADOR}/api/v1/reservas/{codigo}/cancelar",
+                json={"motivo": "Aplicativo morador"},
+            )
+            return {"status": r.status_code, "body": r.json()}
+        except Exception as e:
+            return {"status": 0, "body": f"Erro: {e}"}
 
     def minhas_reservas(self) -> list[dict]:
         r = self.session.get(f"{API_MORADOR}/api/v1/reservas")
@@ -227,7 +239,10 @@ def pick_client(clients: list[HubClient], prompt: str = "Conta") -> HubClient | 
             idx = int(n) - 1
             if 0 <= idx < len(clients):
                 return clients[idx]
-        except (ValueError, KeyboardInterrupt):
+            print(f"  {DIM}Escolha entre 1 e {len(clients)}{RST}")
+        except ValueError:
+            print(f"  {DIM}Digite um numero{RST}")
+        except KeyboardInterrupt:
             return None
 
 
@@ -348,8 +363,11 @@ def sniper(
             if restante <= 0:
                 break
             if restante <= 5 and not relogged:
-                print(f"\n  {B}🔄 Renovando token...{RST}")
-                client.login()
+                print(f"\n  {B}🔄 Renovando token...{RST}", end=" ", flush=True)
+                if client.login():
+                    print(f"{G}OK{RST}")
+                else:
+                    print(f"{R}FALHOU — disparando com token atual{RST}")
                 relogged = True
             h_, r_ = divmod(int(restante), 3600)
             m_, s_ = divmod(r_, 60)
@@ -512,8 +530,10 @@ def trocar_reserva(clients: list[HubClient]) -> None:
 
 def trocar_cli(clients: list[HubClient], cod_reserva: int, conta_src: int, conta_dst: int) -> None:
     """Troca via CLI: --trocar CODIGO --conta N --conta-destino N."""
-    src_idx = min(conta_src - 1, len(clients) - 1)
-    dst_idx = min(conta_dst - 1, len(clients) - 1)
+    src_idx = max(0, min(conta_src - 1, len(clients) - 1))
+    dst_idx = max(0, min(conta_dst - 1, len(clients) - 1))
+    if src_idx == dst_idx and len(clients) > 1:
+        print(f"  {Y}⚠️  Mesma conta src/dst — slot fica vulneravel entre cancel e reserve.{RST}")
     src = clients[src_idx]
     dst = clients[dst_idx]
 
@@ -817,9 +837,13 @@ def main() -> None:
 
     print()
 
-    # CLI mode
-    if len(sys.argv) > 1:
-        idx = min(args.conta - 1, len(clients) - 1)
+    # CLI mode — verifica se alguma acao foi pedida
+    has_action = any([
+        args.listar, args.espiao, args.sniper, args.minhas,
+        args.cancelar, args.trocar, args.area,
+    ])
+    if has_action:
+        idx = max(0, min(args.conta - 1, len(clients) - 1))
         client = clients[idx]
 
         if args.trocar:

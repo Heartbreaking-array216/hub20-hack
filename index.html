@@ -228,9 +228,13 @@ async function apiFetch(method, url, body = null, acct = 1) {
   if (accounts[acct]?.token) headers['Authorization'] = 'Bearer ' + accounts[acct].token;
   const opts = { method, headers };
   if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(url, opts);
-  const data = await r.json().catch(() => null);
-  return { status: r.status, data };
+  try {
+    const r = await fetch(url, opts);
+    const data = await r.json().catch(() => null);
+    return { status: r.status, data };
+  } catch (e) {
+    return { status: 0, data: 'Erro de rede: ' + e.message };
+  }
 }
 
 async function doLogin(acct) {
@@ -243,8 +247,6 @@ async function doLogin(acct) {
 
   const creds = btoa(cpf + ':' + senha);
   try {
-    const r = await apiFetch('POST', API_ACCOUNTS + '/api/v1/login', null, 0);
-    // Need to pass auth header manually for login
     const resp = await fetch(API_ACCOUNTS + '/api/v1/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Base ' + creds, 'Origin': 'app-morador' },
@@ -397,9 +399,9 @@ function startSniper() {
       }
 
       const inicio = data + 'T' + hora.padStart(5, '0') + ':00';
-      const hh = parseInt(hora.split(':')[0]);
-      const mm = parseInt(hora.split(':')[1] || 0);
-      const fim = data + 'T' + String(hh + 1).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ':00';
+      const iniDate = new Date(data + 'T' + hora.padStart(5, '0') + ':00');
+      const fimDate = new Date(iniDate.getTime() + 3600000);
+      const fim = fimDate.getFullYear() + '-' + String(fimDate.getMonth()+1).padStart(2,'0') + '-' + String(fimDate.getDate()).padStart(2,'0') + 'T' + String(fimDate.getHours()).padStart(2,'0') + ':' + String(fimDate.getMinutes()).padStart(2,'0') + ':00';
       const a = accounts[acct];
 
       for (let i = 1; i <= 10; i++) {
@@ -611,9 +613,13 @@ async function executeTroca() {
   const dstAcct = parseInt(document.getElementById('t-dst').value);
   if (!accounts[srcAcct]?.token || !accounts[dstAcct]?.token) { alert('Ambas contas precisam estar logadas'); return; }
 
+  if (srcAcct === dstAcct) {
+    if (!confirm('Mesma conta pra cancelar e reservar! O slot fica vulnerável. Continuar?')) return;
+  }
+
   const reserva = trocaReservas[trocaSelected];
   const cod = reserva.codigoReserva;
-  const areaCod = reserva.area?.codigo || reserva.area?.codigoArea;
+  const areaCod = reserva.area?.codigoArea || reserva.area?.codigo;
   const areaName = (reserva.area?.descricao || '').trim();
   // Limpar datas: sem ms, sem Z
   const inicio = (reserva.dataInicial || '').split('.')[0].replace('Z', '');

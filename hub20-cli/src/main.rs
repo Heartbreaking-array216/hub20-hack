@@ -1,5 +1,5 @@
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
-use chrono::{Local, NaiveTime};
+use chrono::{Duration as CDuration, Local, NaiveDate, NaiveTime};
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 use dialoguer::{Input, Select};
@@ -148,7 +148,10 @@ struct HubClient {
 impl HubClient {
     fn new() -> Self {
         Self {
-            agent: ureq::agent(),
+            agent: ureq::AgentBuilder::new()
+                .timeout_connect(std::time::Duration::from_secs(10))
+                .timeout_read(std::time::Duration::from_secs(30))
+                .build(),
         }
     }
 
@@ -557,13 +560,19 @@ fn do_sniper(client: &HubClient, account: &mut Account, area: i64, data: &str, h
     let m: u32 = parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(0);
 
     let inicio = format!("{data}T{:02}:{:02}:00", h, m);
-    let h_fim = h + 1;
-    let fim = format!("{data}T{:02}:{:02}:00", h_fim, m);
+    // Calcular fim com tratamento de hora 23
+    let (h_fim, data_fim) = if h >= 23 {
+        let d = NaiveDate::parse_from_str(data, "%Y-%m-%d").unwrap() + CDuration::days(1);
+        (0u32, d.format("%Y-%m-%d").to_string())
+    } else {
+        (h + 1, data.to_string())
+    };
+    let fim = format!("{data_fim}T{:02}:{:02}:00", h_fim, m);
 
     let d_parts: Vec<&str> = disparo.split(':').collect();
     let dh: u32 = d_parts[0].parse().unwrap_or(0);
     let dm: u32 = d_parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(0);
-    let target_time = NaiveTime::from_hms_opt(dh, dm, 0).unwrap();
+    let target_time = NaiveTime::from_hms_opt(dh, dm, 0).unwrap_or(NaiveTime::from_hms_opt(0, 0, 0).unwrap());
 
     println!("\n  {}", "🎯 MODO SNIPER ATIVADO".green().bold());
     println!(
@@ -838,7 +847,7 @@ fn interactive_menu(client: &HubClient, accounts: &mut Vec<Account>, configs: &m
                         .with_prompt("\n  Numero do horario")
                         .interact_text()
                         .unwrap_or_default();
-                    let slot_idx: usize = n.trim().parse::<usize>().unwrap_or(1) - 1;
+                    let slot_idx: usize = n.trim().parse::<usize>().unwrap_or(1).saturating_sub(1);
                     if slot_idx >= slots.len() {
                         continue;
                     }
@@ -959,7 +968,7 @@ fn interactive_menu(client: &HubClient, accounts: &mut Vec<Account>, configs: &m
             }
             "9" => {
                 if accounts.len() < 2 {
-                    println!("  {} Troca precisa de 2+ contas.", "⚠️".yellow());
+                    println!("  {} Troca funciona melhor com 2+ contas.", "⚠️".yellow());
                 }
                 if let Some(src_idx) = pick_account(accounts) {
                     let reservas = client.minhas_reservas(&accounts[src_idx]);
@@ -982,7 +991,7 @@ fn interactive_menu(client: &HubClient, accounts: &mut Vec<Account>, configs: &m
                         .with_prompt("\n  Numero da reserva")
                         .interact_text()
                         .unwrap_or_default();
-                    let r_idx: usize = n.trim().parse::<usize>().unwrap_or(1) - 1;
+                    let r_idx: usize = n.trim().parse::<usize>().unwrap_or(1).saturating_sub(1);
                     if r_idx >= reservas.len() { continue; }
                     let cod = reservas[r_idx]["codigoReserva"].as_i64().unwrap_or(0);
 
@@ -1165,7 +1174,7 @@ fn main() {
 
     // CLI subcommand mode
     if let Some(cmd) = cli.cmd {
-        let idx = (cli.conta - 1).min(accounts.len() - 1);
+        let idx = cli.conta.saturating_sub(1).min(accounts.len().saturating_sub(1));
         match cmd {
             Cmd::Listar => show_areas(&client, &accounts[idx]),
             Cmd::Horarios { area, data } => {
@@ -1176,7 +1185,11 @@ fn main() {
                 let h: u32 = parts[0].parse().unwrap_or(20);
                 let m: u32 = parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(0);
                 let inicio = format!("{data}T{:02}:{:02}:00", h, m);
-                let fim = format!("{data}T{:02}:{:02}:00", h + 1, m);
+                let (h_f, d_f) = if h >= 23 {
+                    let d = NaiveDate::parse_from_str(&data, "%Y-%m-%d").unwrap() + CDuration::days(1);
+                    (0u32, d.format("%Y-%m-%d").to_string())
+                } else { (h + 1, data.clone()) };
+                let fim = format!("{d_f}T{:02}:{:02}:00", h_f, m);
                 let (status, body) = client.reservar(&accounts[idx], area, &inicio, &fim);
                 if status == 200 {
                     let cod = body["codigoReserva"].as_i64().unwrap_or(0);
@@ -1236,7 +1249,7 @@ fn main() {
                 show_espiao(&client, &accounts[idx], &data);
             }
             Cmd::Trocar { codigo, destino } => {
-                let dst_idx = (destino - 1).min(accounts.len() - 1);
+                let dst_idx = destino.saturating_sub(1).min(accounts.len().saturating_sub(1));
                 do_trocar(&client, &mut accounts, idx, dst_idx, codigo);
             }
         }
