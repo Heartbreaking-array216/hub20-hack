@@ -1,9 +1,10 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f172a,50:2563eb,100:059669&height=200&section=header&text=H%20U%20B%20%20%202%20.%200&fontSize=60&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Auto%20Booking%20⚡%20—%20Reserva%20na%20Velocidade%20da%20API&descSize=18&descAlignY=55" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f172a,50:2563eb,100:059669&height=200&section=header&text=H%20U%20B%20%20%202%20.%200%20%20%20H%20A%20C%20K&fontSize=60&fontColor=fff&animation=twinkling&fontAlignY=35&desc=Auto%20Booking%20⚡%20—%20Reserva%20na%20Velocidade%20da%20API&descSize=18&descAlignY=55" width="100%"/>
 
 [![Python](https://img.shields.io/badge/Python_3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://rust-lang.org)
+[![Node.js](https://img.shields.io/badge/Node.js_18+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![HTML](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)](./index.html)
 [![Platform](https://img.shields.io/badge/macOS%20%7C%20Linux%20%7C%20Windows-333?style=for-the-badge)](.)
 [![License](https://img.shields.io/badge/license-MIT-059669?style=for-the-badge)](./LICENSE)
@@ -19,7 +20,7 @@
 > [!IMPORTANT]
 > **Isto é uma ferramenta de automação pessoal.** Interage com a API do Hub 2.0 (Hubert)
 > para reservar espaços de condomínio de forma direta — sem o app lento, sem crash à meia-noite,
-> sem ficar recarregando tela. Três interfaces: Python CLI, Rust binary, e Web dashboard.
+> sem ficar recarregando tela. Quatro interfaces: Python CLI, Rust binary, Node.js CLI, e Web dashboard.
 
 ---
 
@@ -31,6 +32,7 @@ flowchart LR
     subgraph Tools["🛠️ Interfaces"]
         PY["🐍 Python CLI"]
         RS["🦀 Rust Binary"]
+        JS["💚 Node.js CLI"]
         WEB["🌐 Web Dashboard"]
     end
 
@@ -39,6 +41,7 @@ flowchart LR
         AUTH["🔐 Auth<br/>Base + Bearer"]
         SNIPER["🎯 Sniper<br/>Disparo Meia-Noite"]
         SPY["🕵️ Espião<br/>Rastreio de Velocidade"]
+        SWAP["🔄 Troca<br/>Cancel + Rebook"]
     end
 
     subgraph API["🏢 Hub 2.0 API"]
@@ -57,14 +60,15 @@ flowchart LR
 | **Contas** | N contas simultâneas (reserva + consulta) |
 | **Sniper** | Disparo automático à meia-noite com refresh de token |
 | **Espião** | Identifica quem reserva nos primeiros 30s (⚡ SPEED) |
-| **Interfaces** | Python CLI · Rust 2.3MB binário · HTML + proxy |
+| **Troca** | Cancel conta A → reserva conta B (atômico, <200ms) |
+| **Interfaces** | Python CLI · Rust 2.3MB · Node.js (zero deps) · HTML + proxy |
 
 ---
 
 ## ⚡ Início Rápido
 
 ```bash
-git clone git@github.com:gabrielmaialva33/hub20.git && cd hub20
+git clone git@github.com:gabrielmaialva33/hub20-hack.git && cd hub20
 cp accounts.example.json accounts.json   # edite com suas credenciais
 ```
 
@@ -74,6 +78,9 @@ Escolha sua arma:
 # 🐍 Python — menu interativo
 pip install requests
 python3 auto_booking.py
+
+# 💚 Node.js — zero dependências (Node 18+)
+node hub20.mjs
 
 # 🦀 Rust — binário nativo (2.3MB)
 cd hub20-cli && cargo build --release
@@ -89,6 +96,7 @@ python3 server.py    # abre http://localhost:8080
 | Ferramenta | Versão | Pra quê |
 |:-----------|:-------|:--------|
 | Python | `>= 3.10` | CLI + proxy server |
+| Node.js | `>= 18` | CLI (zero deps, usa fetch nativo) |
 | Rust | `>= 1.75` | Binário (opcional) |
 | requests | qualquer | Dependência do Python CLI |
 
@@ -235,6 +243,25 @@ python3 auto_booking.py --minhas
 python3 auto_booking.py --cancelar 1332456
 ```
 
+### 9. Trocar reserva (cancel + rebook atômico)
+
+Cancela com uma conta e reserva instantaneamente com outra — janela de <200ms:
+
+```bash
+# Trocar reserva 1332456: cancela conta 1, reserva conta 2
+python3 auto_booking.py --trocar 1332456
+
+# Especificar contas
+python3 auto_booking.py --trocar 1332456 --conta 1 --conta2 2
+```
+
+O que acontece:
+1. Busca detalhes da reserva (área, horário)
+2. Renova tokens de ambas as contas
+3. Cancela a reserva original
+4. **Imediatamente** tenta reservar com a outra conta (5 tentativas)
+5. Se alguém pegar no meio → alerta
+
 ---
 
 ## 🏗️ Arquitetura
@@ -245,6 +272,7 @@ graph TB
     subgraph User["👤 Usuário"]
         CLI["Python CLI<br/>auto_booking.py"]
         BIN["Rust Binary<br/>hub20"]
+        NODE["Node.js CLI<br/>hub20.mjs"]
         WEB["Web Dashboard<br/>index.html"]
     end
 
@@ -263,18 +291,22 @@ graph TB
 
     CLI --> ACC
     BIN --> ACC
+    NODE --> ACC
     WEB --> SRV
     SRV --> HubAPI
     CLI --> HubAPI
     BIN --> HubAPI
+    NODE --> HubAPI
     ACC -.-> CLI
     ACC -.-> BIN
+    ACC -.-> NODE
 ```
 
 | Camada | Arquivo | Função |
 |:-------|:--------|:-------|
-| **Python CLI** | `auto_booking.py` | Menu interativo + flags CLI, N contas, sniper, espião |
+| **Python CLI** | `auto_booking.py` | Menu interativo + flags CLI, N contas, sniper, espião, troca |
 | **Binário Rust** | `hub20-cli/` | Mesmo conjunto de funcionalidades, binário nativo 2.3MB |
+| **Node.js CLI** | `hub20.mjs` | Zero deps (fetch nativo), menu + flags, all features |
 | **Dashboard Web** | `index.html` | Interface visual com countdown, requer proxy |
 | **CORS Proxy** | `server.py` | Proxy local pra browser (API não tem CORS headers) |
 | **Config** | `accounts.json` | Credenciais das N contas (gitignored) |
@@ -301,6 +333,21 @@ chmod +x build-macos.sh && ./build-macos.sh
 ```
 
 O script instala Rust automaticamente se necessário.
+
+---
+
+## 💚 Node.js CLI
+
+Zero dependências — usa `fetch` nativo do Node 18+. Ideal pra quem já tem Node instalado.
+
+```bash
+node hub20.mjs                           # menu interativo
+node hub20.mjs listar                    # áreas
+node hub20.mjs horarios 17 2026-04-03   # horários
+node hub20.mjs sniper 17 2026-04-03 20:00
+node hub20.mjs espiao 2026-04-03
+node hub20.mjs trocar 1332456           # troca atômica
+```
 
 ---
 
@@ -363,18 +410,19 @@ python3 server.py    # inicia proxy em :8080
 
 ## 📊 Status
 
-| Recurso | Python | Rust | Web |
-|:--------|:------:|:----:|:---:|
-| Multi-conta (N) | ✅ | ✅ | ✅ (2) |
-| Listar áreas | ✅ | ✅ | ✅ |
-| Ver horários | ✅ | ✅ | ✅ |
-| Reservar | ✅ | ✅ | via Sniper |
-| Sniper meia-noite | ✅ | ✅ | ✅ |
-| Cancelar | ✅ | ✅ | ✅ |
-| Espião + badges | ✅ | ✅ | ✅ |
-| Renovação de token | ✅ | ✅ | ✅ |
-| Config persistente | ✅ | ✅ | — |
-| Multiplataforma | ✅ | ✅ | ✅ |
+| Recurso | Python | Rust | Node.js | Web |
+|:--------|:------:|:----:|:-------:|:---:|
+| Multi-conta (N) | ✅ | ✅ | ✅ | ✅ (2) |
+| Listar áreas | ✅ | ✅ | ✅ | ✅ |
+| Ver horários | ✅ | ✅ | ✅ | ✅ |
+| Reservar | ✅ | ✅ | ✅ | via Sniper |
+| Sniper meia-noite | ✅ | ✅ | ✅ | ✅ |
+| Cancelar | ✅ | ✅ | ✅ | ✅ |
+| Espião + badges | ✅ | ✅ | ✅ | ✅ |
+| Troca (cancel+rebook) | ✅ | ✅ | ✅ | ✅ |
+| Renovação de token | ✅ | ✅ | ✅ | ✅ |
+| Config persistente | ✅ | ✅ | ✅ | — |
+| Multiplataforma | ✅ | ✅ | ✅ | ✅ |
 
 ---
 
@@ -382,7 +430,7 @@ python3 server.py    # inicia proxy em :8080
 
 **Star se você também sofre com o app do condomínio ⭐**
 
-[![GitHub stars](https://img.shields.io/github/stars/gabrielmaialva33/hub20?style=social)](https://github.com/gabrielmaialva33/hub20)
+[![GitHub stars](https://img.shields.io/github/stars/gabrielmaialva33/hub20-hack?style=social)](https://github.com/gabrielmaialva33/hub20-hack)
 
 *Feito por [Gabriel Maia](https://github.com/gabrielmaialva33)*
 
